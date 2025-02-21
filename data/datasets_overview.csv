@@ -1,0 +1,12 @@
+dataset,rows,cols,num_cols,cat_cols,max_classes
+adult_complete,47876,14,6,8,30
+car_evaluation,1728,7,0,7,4
+chess_king_rook_vs_king,28056,7,3,4,18
+connect_4,67557,43,0,43,3
+diabetes,768,9,9,0,
+diabetes_HI,253680,22,22,0,
+diamonds,53940,10,7,3,8
+letter_recognition,20000,17,16,1,26
+magic_gamma_telescope,19020,11,10,1,2
+nursery,12958,9,0,9,5
+statlog_landsat_satellite,6435,37,37,0,
