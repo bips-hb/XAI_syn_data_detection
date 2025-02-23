@@ -8,6 +8,7 @@ library(cowplot)
 library(ggplot2)
 library(ParBayesianOptimization) # only for xgboost
 library(doParallel)
+library(parallelly)
 library(xgboost)
 library(parallel)
 library(data.table)
@@ -29,7 +30,7 @@ filter_df <- data.table(expand.grid(
     'diabetes', 'diabetes_HI', 'diamonds', 'letter_recognition', 
     'magic_gamma_telescope', 'nursery', 'statlog_landsat_satellite'
   ), 
-  model_name = c("ranger", "logReg", "xgboost"), 
+  model_name = "xgboost",#  c("ranger", "logReg", "xgboost"), 
   syn_name = c(
     "ARF", "CTAB-GAN+", "CTGAN", "synthpop", "TabSyn", "TVAE"
   )
@@ -48,17 +49,17 @@ max_runs <- 10
 
 # Threading/Number of CPUS
 # Note: The total number of cores used will be 'mc.cores * n_threads'
-n_threads <- 72 # number of threads for each mc parallel run
-mc.cores <- 3L # number of cores for parallel processing
+n_threads <- 15 # number of threads for each mc parallel run
+mc.cores <- 16L # number of cores for parallel processing
 
 options(mc.cores = mc.cores)
 options(ranger.num.threads = n_threads)
 Sys.setenv("OMP_NUM_THREADS" = n_threads)
 
 # XGBoost tuning parameters
-n_parallel <- 18
+n_parallel <- 15 #18
 init_points <- n_parallel
-time_limit <- 60 *45 # 45 minutes
+time_limit <- 60 *30 # 45 minutes
 
 # Load utility methods and create dirs -----------------------------------------
 

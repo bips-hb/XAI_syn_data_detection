@@ -6,19 +6,21 @@
 # Fit detection model
 # `data` is a list of data frames, each containing a real and synthetic dataset
 # `model_name` gives the model type to fit
-fit_model <- function(data, model_name = "ranger", these_runs = NULL, 
-                      n_threads = 15, bounds = NULL, time_limit = 160 * 30, n_parallel = 5) {
+fit_model <- function(data, model_name = "ranger", max_runs = NULL, 
+                      n_threads = 15, time_limit = 160 * 30, n_parallel = 5,
+                      init_points = n_parallel) {
+  
+  # Get names of the syn. runs
   run_names <- names(data)
   args <- strsplit(run_names, "--")
   
   res <- lapply(seq_along(data), function(i) {
     set.seed("2024")
     
-    cli::cli_progress_step("Fitting model on run {i} using {n_threads} threads")
     
     # Skip if not in these_runs
-    if (!is.null(these_runs)) {
-      if (!(i %in% these_runs)) {
+    if (!is.null(max_runs)) {
+      if (as.numeric(args[[i]][3]) > max_runs) {
         return(NULL)
       }
     }
@@ -47,7 +49,7 @@ fit_model <- function(data, model_name = "ranger", these_runs = NULL,
       model_metric_value <- c(model$prediction.error)
       
       # Save model
-      dir <- paste0("./detection_models/", model_name, "/")
+      dir <- paste0("./models/", model_name, "/")
       if (!dir.exists(dir)) dir.create(dir)
       saveRDS(model, paste0(dir, paste(args[[i]], collapse = "--"), ".rds"))
       
@@ -75,12 +77,22 @@ fit_model <- function(data, model_name = "ranger", these_runs = NULL,
       model_metric_value <- c(model$aic)
       
       # Save model
-      dir <- paste0("./detection_models/", model_name, "/")
+      dir <- paste0("./models/", model_name, "/")
       if (!dir.exists(dir)) dir.create(dir)
       saveRDS(model, paste0(dir, paste(args[[i]], collapse = "--"), ".rds"))
       # XGBoost ------------------------------------------------------------------
     } else if (model_name == "xgboost") {
       library(xgboost)
+      
+      # Set hyperparameter bounds (only for xgboost)
+      bounds <- list(
+        eta = c(0.005, 0.5),
+        max_depth = c(1L, 11L),
+        min_child_weight = c(1, 60),
+        subsample = c(0.1, 1),
+        lambda = c(1, 10),
+        alpha = c(1, 10)
+      )
       
       # Encode datasets
       df_train_enc <- encode_cat_vars(df_train)
@@ -90,10 +102,11 @@ fit_model <- function(data, model_name = "ranger", these_runs = NULL,
       y <- as.numeric(df_train_enc$real) - 1
       
       best_params = tune_xgboost(x, y, bounds, n_threads = n_threads, 
+                                 initPoints = init_points,
                                  n_parallel = n_parallel, time_limit = time_limit)
       
       # Save the result of the tuning
-      ggsave(paste0("./tuning_logs/", paste(c(args[[i]], "xgboost"), collapse = "--"), ".pdf"), 
+      ggsave(paste0("./tmp/tuning_logs/", paste(c(args[[i]], "xgboost"), collapse = "--"), ".pdf"), 
              width = 15, height = 10)
       
       model <- xgboost(params = best_params$params,
@@ -115,7 +128,7 @@ fit_model <- function(data, model_name = "ranger", these_runs = NULL,
       model_metric_value <- c()
       
       # Save model
-      dir <- paste0("./detection_models/", model_name, "/")
+      dir <- paste0("./models/", model_name, "/")
       if (!dir.exists(dir)) dir.create(dir)
       xgb.save(model, paste0(dir, paste(args[[i]], collapse = "--"), ".rds"))
     } else {
@@ -147,7 +160,7 @@ fit_model <- function(data, model_name = "ranger", these_runs = NULL,
     )
     
     # Save res in logs
-    saveRDS(res_i, paste0("./tuning_logs/", paste(c(args[[i]], as.character(model_name)), collapse = "--"), ".rds"))
+    saveRDS(res_i, paste0("./tmp/tuning_logs/", paste(c(args[[i]], as.character(model_name)), collapse = "--"), ".rds"))
     
     res_i
   })
@@ -203,7 +216,7 @@ tune_xgboost <- function(x, y, bounds,
   }
   
   # Set max to 30 mins
-  cl <- makeCluster(n_parallel)
+  cl <- parallelly::makeClusterPSOCK(n_parallel)
   registerDoParallel(cl)
   clusterExport(cl,c('folds', 'y', "x", "n_threads", "n_parallel"), envir = environment())
   clusterEvalQ(cl,expr= {
@@ -213,10 +226,10 @@ tune_xgboost <- function(x, y, bounds,
   bayes_out <- bayesOpt(FUN = obj_func, bounds = bounds, 
                         initPoints = initPoints, iters.n = 30000,
                         otherHalting = list(timeLimit = time_limit), 
-                        iters.k = 18,
+                        iters.k = initPoints,
                         plotProgress = TRUE,
                         parallel = TRUE,
-                        verbose = TRUE)
+                        verbose = FALSE)
   stopCluster(cl)
   registerDoSEQ()
   
@@ -343,7 +356,29 @@ encode_cat_vars <- function(df, exclude = c("real", "train")) {
   }
 }
 
+get_predict_fun <- function(model_name) {
+  # Select predict function
+  if (model_name == "xgboost") {
+    pred_fun <- function(model, newdata) {
+      # Encode data
+      newdata <- as.matrix(encode_cat_vars(newdata))
+      as.numeric(predict(model, newdata = newdata))
+    }
+  } else if (model_name == "logReg") {
+    pred_fun <- function(model, newdata) {
+      as.numeric(predict(model, newdata = newdata, type = "response"))
+    }
+  } else if (model_name == "ranger") {
+    pred_fun <- function(model, newdata) {
+      as.numeric(predict(model, data = newdata)$predictions[, 2])
+    }
+  }
+  
+  pred_fun
+}
 
+
+# TODO: Do we need this??
 get_pred_fun <- function(model_name){
   # Ranger model -------------------------------------------------------------
   if (model_name == "ranger") {
