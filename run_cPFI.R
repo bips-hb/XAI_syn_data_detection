@@ -74,7 +74,7 @@ df <- rbindlist(lapply(model_names, function(model_name) {
 df <- df[filter_df, on = c("dataset_name", "model_name", "syn_name", "run_model")]
 
 
-# Running PFI ------------------------------------------------------------------
+# Running cPFI -----------------------------------------------------------------
 cli_h1("Running conditional Permutation Feature Importance (cPFI)")
 
 res <- lapply(seq_len(nrow(df)), function(i) {
