@@ -163,7 +163,7 @@ res <- lapply(seq_len(nrow(df)), function(i) {
 
     rowid_real <- dt_test_obs_i[type=="real", rowid]
 
-    x_explain_real <- data_test[rowid %in% rowid_real, ..feature_cols]
+    x_explain_real <- data_test[dt_test_obs_i[type=="real", .(rowid)], ..feature_cols, on = "rowid"]
 
     expl_real <- mcceR::explain_mcce(model = model,
                                      x_explain = x_explain_real,
@@ -177,13 +177,18 @@ res <- lapply(seq_len(nrow(df)), function(i) {
                                      generate.K = GENERATE_K,
                                      generate.seed = 123)
 
+    melted_ce_values <- melt(data.table(rowid_test = rowid_syn, expl_syn$cf[,-c(1,2)]),
+                             id.vars="rowid_test",variable.factor = FALSE,value.factor = FALSE)
+    melted_org_values <- melt(data.table(rowid_test = rowid_syn, x_explain_syn),
+                              id.vars="rowid_test",variable.factor = FALSE,value.factor = FALSE)
+
     res_ce_values <- rbind(res_ce_values,
-                           data.frame(rowid_test = rowid_real, expl_real$cf[,-c(1,2)],row_type="cf",type="real"),
-                           data.frame(rowid_test = rowid_real, x_explain_real,row_type="org",type="real")
+                           data.table(melted_ce_values,row_type="cf",type="real"),
+                           data.table(melted_ce_values,row_type="org",type="real")
     )
 
     res_ce_measures <- rbind(res_ce_measures,
-                             data.frame(rowid_test = rowid_real, expl_real$cf_measures[,-1],type="real")
+                             data.table(rowid_test = rowid_real, expl_real$cf_measures[,-1],type="real")
     )
 
   }
@@ -192,7 +197,7 @@ res <- lapply(seq_len(nrow(df)), function(i) {
 
     rowid_syn <- dt_test_obs_i[type=="syn", rowid]
 
-    x_explain_syn <- data_test[rowid %in% rowid_syn, ..feature_cols]
+    x_explain_syn <- data_test[dt_test_obs_i[type=="syn", .(rowid)], ..feature_cols, on = "rowid"]
 
     expl_syn <- mcceR::explain_mcce(model = model,
                                     x_explain = x_explain_syn,
@@ -206,13 +211,18 @@ res <- lapply(seq_len(nrow(df)), function(i) {
                                     generate.K = GENERATE_K,
                                     generate.seed = 123)
 
+    melted_ce_values <- melt(data.table(rowid_test = rowid_syn, expl_syn$cf[,-c(1,2)]),
+                             id.vars="rowid_test",variable.factor = FALSE, value.factor = FALSE)
+    melted_org_values <- melt(data.table(rowid_test = rowid_syn, x_explain_syn),
+                              id.vars="rowid_test",variable.factor = FALSE, value.factor = FALSE)
+
     res_ce_values <- rbind(res_ce_values,
-                           data.frame(rowid_test = rowid_syn, expl_syn$cf[,-c(1,2)],row_type="cf",type="syn"),
-                           data.frame(rowid_test = rowid_syn, x_explain_syn,row_type="org",type="syn")
+                           data.table(melted_ce_values,row_type="cf",type="syn"),
+                           data.table(melted_ce_values,row_type="org",type="syn")
     )
 
     res_ce_measures <- rbind(res_ce_measures,
-                             data.frame(rowid_test = rowid_syn, expl_syn$cf_measures[,-1],type="syn")
+                             data.table(rowid_test = rowid_syn, expl_syn$cf_measures[,-1],type="syn")
     )
 
   }
@@ -227,7 +237,7 @@ res <- lapply(seq_len(nrow(df)), function(i) {
                          model_name = df$model_name[i],
                          timestamp = timestamp)
 
-  out_ce_measures <- cbind(res_ce_values,
+  out_ce_measures <- cbind(res_ce_measures,
                            dataset_name = df$dataset_name[i],
                            syn_name = df$syn_name[i],
                            run_model = df$run_model[i],

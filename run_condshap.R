@@ -175,7 +175,7 @@ res <- lapply(seq_len(nrow(df)), function(i) {
   rowid0 <- dt_test_obs_i[, rowid]
   type0 <- dt_test_obs_i[,type]
 
-  x_explain <- data_test[rowid %in% rowid0, ..feature_cols]
+  x_explain <- data_test[dt_test_obs_i[, .(rowid)], ..feature_cols,on="rowid"]
 
   class(model)="" # Required for workaround with pre-implemented model class in shapr.
 
@@ -194,13 +194,17 @@ res <- lapply(seq_len(nrow(df)), function(i) {
 
   timestamp <- format(Sys.time())
 
+  melted_condshap_values <- melt(data.table(rowid_test = rowid0, expl$shapley_values_est[,-c(1,2)], type = type0),
+                                 id.vars=c("rowid_test","type"),variable.factor = FALSE,value.factor = FALSE,variable.name = "feature")
+
+
   res_condSHAP <- data.frame(
-    feature = rep(feature_cols, each = length(rowid0)),
-    rowid_test = rowid0,
-    value = unlist(expl$shapley_values_est[,-c(1,2)]),
-    method = "condSHAP",
+    melted_condshap_values,
     approach = APPROACH,
-    type = rep(type0,each=length(feature_cols)),
+    dataset_name = df$dataset_name[i],
+    syn_name = df$syn_name[i],
+    run_model = df$run_model[i],
+    model_name = df$model_name[i],
     timestamp = timestamp
   )
 
