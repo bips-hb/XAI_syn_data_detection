@@ -6,6 +6,7 @@ library(patchwork)
 library(geomtextpath)
 library(rlang)
 library(data.table)
+library(xtable)
 
 # Set theme
 theme_set(theme_minimal(base_size = 15))
@@ -41,10 +42,10 @@ ggsave("figures/model_performance_examples.pdf", width = 8, height = 5)
 # Plot for correct and incorrect predictions
 thres1 <- 0.6
 thres2 <- 0.8
-df <- res_perf[metric == "Accuracy" & run <= 5, 
-              .(correct = sum(value > thres2), 
+df <- res_perf[metric == "Accuracy" & run <= 5,
+              .(correct = sum(value > thres2),
                 middle = sum(value > thres1 & value <= thres2),
-                incorrect = sum(value <= thres1)), 
+                incorrect = sum(value <= thres1)),
               by = c("syn_name", "model_name", "train")]
 df <- melt(df, id.vars = c("syn_name", "model_name", "train"))
 
@@ -54,16 +55,16 @@ res_fill <- res_fill[value != max_sum, ]
 res_fill$variable <- "NA"
 res_fill$value <- max_sum - res_fill$value
 df <- rbind(df, res_fill)
-df$syn_name <- factor(df$syn_name, 
+df$syn_name <- factor(df$syn_name,
                       levels = rev(c("TabSyn", "CTGAN", "TVAE", "CTAB-GAN+", "ARF", "synthpop")))
 
 df$variable <- factor(df$variable, levels = c("correct", "middle", "incorrect", "NA"),
-                       labels = c(paste0("Above ", thres2 * 100, "%"), 
+                       labels = c(paste0("Above ", thres2 * 100, "%"),
                                   paste0("Between ", thres1 * 100, "% and ", thres2 * 100, "%"),
                                   paste0("Below ", thres1 * 100, "%"), "NA"))
 
 # Selection
-ggplot(df[train == "test data"], 
+ggplot(df[train == "test data"],
        aes(x = value, y = syn_name, fill = variable)) +
   geom_bar(stat = "identity", position = "stack", width = 0.9) +
   geom_text(aes(label = ifelse(value > 10, value, "")), position = position_stack(vjust = 0.5)) +
@@ -90,7 +91,7 @@ ggsave("figures/model_performance_full.pdf", width = 12, height = 7)
 ################################################################################
 #                           RESEARCH QUESTION 1 (Q1)
 #
-#       Which features and feature interactions were most challenging 
+#       Which features and feature interactions were most challenging
 #                       for the generative model?
 ################################################################################
 res_q1 <- data.table(rbind(
@@ -145,7 +146,7 @@ tmp <- lapply(unique(df$feature), function(feat) {
   df_pdp <- df[feature == feat & method == "pdp" & real != "both", ]
   df_pdp_full <- df[feature == feat & method == "pdp", ]
   df_rug_feat <- df_rug[variable == feat, ]
-  
+
   if (all(df_ice$feat_type == "numeric")) {
     df_rug_feat$gridpoint <- df_rug_feat$value
     p <- ggplot(mapping = aes(x = as.numeric(as.character(gridpoint)))) +
@@ -155,7 +156,7 @@ tmp <- lapply(unique(df$feature), function(feat) {
       geom_rug(data = df_rug_feat, aes(color = real), sides = "b", alpha = 0.5) +
       labs(x = "Feature value", y = "Prediction", color = NULL) +
       theme(legend.position = "top")
-    
+
     if (feat %in% c("capital_gain", "capital_loss")) {
       p <- p + scale_x_continuous(transform = "log2")
     }
@@ -164,10 +165,10 @@ tmp <- lapply(unique(df$feature), function(feat) {
     p <- ggplot(df_ice, aes(y = gridpoint, x = value, fill = real)) +
       geom_bar(stat = "identity", data = df_rug_feat, aes(y = value, x = count, fill = real), alpha = 0.5, inherit.aes = FALSE) +
       labs(x = "Prediction", y = "Feature value", fill = NULL) +
-      geom_boxplot() + 
+      geom_boxplot() +
       theme(legend.position = "top")
   }
-  
+
   ggsave(paste0("figures/Q2/Q2_adult_complete_", feat, ".pdf"), p, width = 8, height = 5)
 })
 
@@ -175,18 +176,111 @@ res <- res_q2[dataset_name == "adult_complete" & method %in% c("pdp", "ale") & f
 res$value <- ifelse(res$method == "pdp", res$value - 0.5, res$value)
 ggplot(res) +
   geom_line(aes(x = as.numeric(as.character(gridpoint)), y = value, color = method, group = method), alpha = 0.5)
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+
+
+
+
+################################################################################
+#                         RESEARCH QUESTION 4 (Q4)
+#
+#             TODO: Add description of the research question
+################################################################################
+
+
+res_ce_values <- fread("./results/Q4/ce_values_final.csv")
+res_ce_measures <- fread("./results/Q4/ce_measures_final.csv")
+
+if (!dir.exists("figures/Q4")) dir.create("figures/Q4",recursive = TRUE)
+if (!dir.exists("tables/Q4")) dir.create("tables/Q4",recursive = TRUE)
+
+# adult_complete
+
+this_res_ce_measures <- res_ce_measures[dataset_name=="adult_complete" &
+                                          syn_name == "TabSyn" &
+                                          run_model==2 &
+                                          model_name == "xgboost" &
+                                          type == "syn"]
+
+this_res_ce_values <- res_ce_values[dataset_name=="adult_complete" &
+                                          syn_name == "TabSyn" &
+                                          run_model==2 &
+                                          model_name == "xgboost" &
+                                          type == "syn"]
+
+
+# Reduce to those with the largest L0 measure
+this_res_ce_measures <- this_res_ce_measures[measure_L0 ==max(measure_L0)]
+features_cols <- unique(this_res_ce_values$variable)
+
+tab_final <- NULL
+for(i in seq_len(nrow(this_res_ce_measures))){
+  this_rowid <- this_res_ce_measures[i,rowid_test]
+
+  tmp <- this_res_ce_values[rowid_test==this_rowid,.(variable,value,row_type)]
+  tab <- data.table(org=tmp[row_type=="org"][,value], cf=tmp[row_type=="cf"][,value])
+
+#  tab <- dcast(this_res_ce_values[rowid_test==this_rowid,.(variable,value,row_type)],formula = row_type~variable)
+
+  tab[org!=cf, `:=`(org=paste0("\\textcolor{red}{",org,"}"),
+                    cf=paste0("\\textcolor{red}{",cf,"}"))]
+
+  tab_final <- cbind(tab_final,tab)
+}
+
+tab_all <- as.data.frame(tab_final)
+rownames(tab_all) <- features_cols
+
+no_plots <- ceiling(length(this_res_ce_measures[,rowid_test])/2)
+
+for(i in seq_len(no_plots)){
+  these_plots <- 4*(i-1)+1:4
+  these_plots <- these_plots[these_plots<=ncol(tab_all)]
+
+  these_test_ids <- this_res_ce_measures[,rowid_test][2*(i-1)+1:2]
+  these_test_ids <- these_test_ids[!is.na(these_test_ids)]
+
+  tab <- tab_all[,these_plots]
+
+  addtorow <- list()
+  addtorow$pos <- list(0)
+  addtorow$command <- paste0("Feature",paste0('& \\multicolumn{2}{c|}{ test id = ',these_test_ids , '}', collapse=''), '\\\\')
+
+  align_vector <- paste0("|l|",paste0(rep("rr|",length(these_test_ids)),collapse=""))
+
+  caption0 <- paste0("Counterfactual explanations for the synthetic observations with small probabilities of being real ",
+                     "for the adult data set.",collapse = "")
+
+  print(xtable(tab,align = align_vector,
+               caption = caption0),
+        sanitize.text.function = identity,
+        sanitize.rownames.function = NULL,
+        include.rownames = TRUE,
+        include.colnames = FALSE,
+        booktabs = TRUE,
+        add.to.row=addtorow,
+        file = paste0("tables/Q4/ce_plot_",i,".tex")
+  )
+
+}
+
+
+
+
+res_ce_values
+
+
+# force plots
+
+# something we didnt
+
+# Some comoinations which are not shown
+
+# counterfactuals for the same
+
+# age integer va non.integer
+
+
+
+
+
+
