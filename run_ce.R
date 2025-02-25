@@ -33,7 +33,7 @@ options(mc.cores = mc.cores)
 
 # Global arguments for the CE method
 NUM_TRAIN <- 10^4 # Number of samples for the calculation
-GENERATE_K = 10^3#10^4 # TODO: Increse to at least 10^5
+GENERATE_K = 5*10^5#10^4 # TODO: Increse to at least 10^5
 TO_EXPLAIN = c("real","syn") # Which type of explanatins to explain (one or both of "real", "syn")
 PATH_relevant_test_obs <- "./prepare_local/relevant_test_obs.csv"
 
@@ -44,6 +44,21 @@ filter_df <- data.table(
   syn_name = rev(c("TabSyn", "CTGAN")),
   run_model = rep(1:10,each=2)
 )
+
+### TEMP SETTINGS ONLY FOR TESTING ####
+
+# Global arguments for the condSHAP method
+NUM_TRAIN <- 10^3 # Run v(S) computations in parallel within shapr?
+GENERATE_K = 5*10^2
+
+filter_df <- data.table(
+  dataset_name = rev(c("adult_complete", "nursery")),
+  model_name = c("xgboost"),
+  syn_name = rev(c("TabSyn", "CTGAN")),
+  run_model = c(8,2)
+)
+
+### TEMP SETTINGS ONLY FOR TESTING  ENDS ####
 
 
 # Load utility methods and create dirs -----------------------------------------

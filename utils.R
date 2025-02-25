@@ -391,7 +391,6 @@ get_predict_fun_shapr <- function(model_name){
 
     # Logistic Regression model ------------------------------------------------
   } else if (model_name == "xgboost"){
-    class(model)="blabla"
     pred_fun <- function(model, newdata) {
       class(model) = "xgb.Booster"
       to_categorical <- function(x, label = "") {

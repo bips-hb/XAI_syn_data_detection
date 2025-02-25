@@ -49,6 +49,28 @@ filter_df <- data.table(
   run_model = rep(1:10,each=2)
 )
 
+### TEMP SETTINGS ONLY FOR TESTING ####
+
+# Global arguments for the condSHAP method
+SHAPR_PARALLEL <- TRUE # Run v(S) computations in parallel within shapr?
+SHARP_NUM_WORKERS <- 10 # Number of workers to use for the parallelization in shapr
+NUM_TRAIN <- 500 # Number of observations to use to train the feature distributions
+NUM_COAL_SAMPLES <- 100 # Maximum number of coalitions considered
+NUM_MC_SAMPLES <- 5*10^2 # Number of Monte Carlo samples in the numerical integration for computing the v(S)
+APPROACH <- "independence" # "ctree" or "independence"
+PATH_relevant_test_obs <- "./prepare_local/relevant_test_obs.csv"
+
+filter_df <- data.table(
+  dataset_name = rev(c("adult_complete", "nursery")),
+  model_name = c("xgboost"),
+  syn_name = rev(c("TabSyn", "CTGAN")),
+  run_model = c(8,2)
+)
+
+### TEMP SETTINGS ONLY FOR TESTING  ENDS ####
+
+
+
 # Load utility methods and create dirs -----------------------------------------
 
 # Setting up parallellizaion for shapr::explain()

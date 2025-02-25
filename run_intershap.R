@@ -43,7 +43,19 @@ filter_df <- data.table(
   run_model = rep(1:10,each=2)
 )
 
-filter_df <- filter_df[c(1,9)]
+### TEMP SETTINGS ONLY FOR TESTING ####
+
+filter_df <- data.table(
+  dataset_name = rev(c("adult_complete", "nursery")),
+  model_name = c("xgboost"),
+  syn_name = rev(c("TabSyn", "CTGAN")),
+  run_model = c(8,2)
+)
+
+NUM_SAMPLES <- 20 # Number of samples for the calculation
+
+### TEMP SETTINGS ONLY FOR TESTING  ENDS ####
+
 
 # Load utility methods and create dirs -----------------------------------------
 
