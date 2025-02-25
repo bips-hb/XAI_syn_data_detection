@@ -43,8 +43,7 @@ filter_df <- data.table(
   run_model = rep(1:10,each=2)
 )
 
-### TEMP SETTINGS ONLY FOR TESTING ####
-
+# What we actually use
 filter_df <- data.table(
   dataset_name = rev(c("adult_complete", "nursery")),
   model_name = c("xgboost"),
@@ -52,7 +51,10 @@ filter_df <- data.table(
   run_model = c(8,2)
 )
 
-NUM_SAMPLES <- 20 # Number of samples for the calculation
+
+### TEMP SETTINGS ONLY FOR TESTING ####
+
+#NUM_SAMPLES <- 20 # Number of samples for the calculation
 
 ### TEMP SETTINGS ONLY FOR TESTING  ENDS ####
 
