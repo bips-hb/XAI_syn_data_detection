@@ -108,7 +108,13 @@ ggsave("figures/model_performance/model_performance_full.pdf", width = 12, heigh
 #                       for the generative model?
 ################################################################################
 res_q1 <- data.table(readRDS("./results/Q1/feature_importance.rds"))
-res_treeshap <- readRDS("./results/Q3/intershap.rds")
+res_treeshap <- c(
+  readRDS("./results/Q3/intershap_1.rds"),
+  readRDS("./results/Q3/intershap_2.rds"),
+  readRDS("./results/Q3/intershap_3.rds"),
+  readRDS("./results/Q3/intershap_4.rds")
+)
+  
 
 # Plot for adult_complete ------------------------------------------------------
 
@@ -226,6 +232,9 @@ ggsave("figures/Q1/nursery.pdf", plot = p, width = 12, height = 5)
 ################################################################################
 res_q2 <- data.table(readRDS("./results/Q2/feat_effects.rds"))
 res_q2_rugs <- data.table(readRDS("./results/Q2/feat_effects_rugs.rds"))
+num_rugs <- 1000
+
+set.seed(42)
 
 # Plot for adult_complete ------------------------------------------------------
 df <- res_q2[dataset_name == "adult_complete", ]
@@ -244,7 +253,7 @@ tmp <- lapply(unique(df$feature), function(feat) {
       geom_line(data = df_ice, aes(group = id, color = real, y = value), alpha = 0.5, linewidth = 0.3) +
       geom_line(aes(group = real, y = value), data = df_pdp, linewidth = 1.5, color = "black") +
       geom_line(aes(color = real, y = value), data = df_pdp, linewidth = 1, linetype = "dashed") +
-      geom_rug(data = df_rug_feat, aes(color = real), sides = "b", alpha = 0.5) +
+      geom_rug(data = df_rug_feat[sample(nrow(df_rug_feat), min(num_rugs, nrow(df_rug_feat)))], aes(color = real), sides = "b", alpha = 0.5) +
       facet_grid(cols = vars(feature), labeller = function(s) paste0("Feature: ", s)) +
       labs(x = "Feature value", y = "Prediction", color = NULL) +
       theme(legend.position = "top")
@@ -271,7 +280,8 @@ tmp <- lapply(unique(df$feature), function(feat) {
   if (all(df_ale$feat_type == "numeric")) {
     df_rug_feat$gridpoint <- df_rug_feat$value
     p <- ggplot(df_ale, aes(x = as.numeric(as.character(gridpoint)))) +
-      geom_rug(data = df_rug_feat, aes(color = real), sides = "b", alpha = 0.5,
+      geom_rug(data = df_rug_feat[sample(nrow(df_rug_feat), min(num_rugs, nrow(df_rug_feat)))],
+               aes(color = real), sides = "b", alpha = 0.5,
                show.legend = FALSE) +
       geom_hline(yintercept = 0) +
       facet_grid(cols = vars(feature), labeller = function(s) paste0("Feature: ", s)) +
