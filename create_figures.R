@@ -179,6 +179,113 @@ ggplot(res) +
 
 
 
+################################################################################
+#                         RESEARCH QUESTION 3 (Q3)
+#
+#             TODO: Add description of the research question
+################################################################################
+
+res_condshap <- fread("./results/Q3/condshap_final.csv")
+
+
+if (!dir.exists("figures/Q3")) dir.create("figures/Q3",recursive = TRUE)
+
+source("utils.R")
+
+# Consider these types of observations:
+# large differences between ctree and indep. Check if where it differs is seen from pairplots of the data
+#
+
+# adult_complete
+
+# First considering synthetic observations
+this_res_condshap <- res_condshap[dataset_name=="adult_complete" &
+                                    syn_name == "TabSyn" &
+                                    run_model==2 &
+                                    model_name == "xgboost" &
+                                    type == "syn"]
+
+features_cols <- this_res_condshap[,unique(feature)]
+
+#### Simplest way to get feature values
+res_ce_values <- fread("./results/Q4/ce_values_final.csv")
+this_res_ce_values <- res_ce_values[dataset_name=="adult_complete" &
+                                      syn_name == "TabSyn" &
+                                      run_model==2 &
+                                      model_name == "xgboost" &
+                                      type == "syn"]
+
+this_res_ce_values[row_type=="org"]
+features_dt <- dcast(this_res_ce_values[row_type=="org",.(rowid_test,variable,value)],formula = rowid_test~variable)
+
+feature_vals_dt <- features_dt[,..features_cols]
+####
+
+# Flattening ctree and indep shapley values
+ctree_dt <- dcast(this_res_condshap[approach=="ctree",.(rowid_test,feature,value)],formula = rowid_test~feature)
+indep_dt <- dcast(this_res_condshap[approach=="independence",.(rowid_test,feature,value)],formula = rowid_test~feature)
+
+# Compare their sizes
+rowid_test_vec <- ctree_dt[,rowid_test]
+
+comp_dt <- data.table(rowid_test=rowid_test_vec,meandiff=rowMeans(abs(ctree_dt[,-1]-indep_dt[,-1])))
+these_rowid <- comp_dt[order(-meandiff)][1:4,rowid_test]
+
+# Multiple versions
+
+plot_ctree <- plot_indep <- list()
+for(i in seq_along(these_rowid)){
+  plot_ctree[[i]] <- sv_force_shapviz_mod(ctree_dt[rowid_test==these_rowid[i],..features_cols],
+                                          b=0.5,
+                                          feature_vals_dt,
+                                          row_id = 1,
+                                          max_display=5,
+                                          fill_colors = c("darkgreen","darkred"))+
+    ggplot2::ggtitle(paste0("Ctree, test id = ",these_rowid[i]))+
+    theme(plot.title = element_text(size=10))
+
+  plot_indep[[i]] <- sv_force_shapviz_mod(indep_dt[rowid_test==these_rowid[i],..features_cols],
+                                          b=0.5,
+                                          feature_vals_dt,
+                                          row_id = 1,
+                                          max_display=5,
+                                          fill_colors = c("darkgreen","darkred"))+
+    ggplot2::ggtitle(paste0("Independence, test id = ",these_rowid[i]))+
+    theme(plot.title = element_text(size=10))
+
+}
+
+library(patchwork)
+pl_ctree <- (patchwork::wrap_plots(plot_ctree) +
+  patchwork::plot_layout(ncol = 1L) + patchwork::plot_annotation(title="ctree"))
+pl_indep <- (patchwork::wrap_plots(plot_indep) +
+      patchwork::plot_layout(ncol = 1L) + patchwork::plot_annotation(title = "independence"))
+
+p1 <- (pl_ctree | pl_indep) + patchwork::plot_annotation(
+  title = "Comparison of ctree and independence approach",
+  theme = theme(plot.title = element_text(hjust = 0.5)))
+
+ggsave(paste0("figures/Q3/Q3_adult_complete_condshap_ctree_indep_comp_separate_test.pdf"), p1, scale = 1.1,width = 10, height = 8)
+
+
+# Testing to put the forceplots for independence and ctree together
+
+p2 <- sv_force_shapviz_mod2(ctree_dt[rowid_test==these_rowid[1],..features_cols],
+                            indep_dt[rowid_test==these_rowid[1],..features_cols],
+                            b=0.5,
+                            feature_vals_dt,
+                            row_id = 1,
+                            max_display=5,
+                            fill_colors = c("darkgreen","darkred"))+
+  scale_y_discrete(breaks=c(1,2),
+                   labels=c("ctree","independence"))
+
+ggsave(paste0("figures/Q3/Q3_adult_complete_condshap_ctree_indep_comp_together_test.pdf"), p2 , width = 8, height = 4)
+
+
+
+
+
 
 ################################################################################
 #                         RESEARCH QUESTION 4 (Q4)
@@ -262,22 +369,6 @@ for(i in seq_len(no_plots)){
   )
 
 }
-
-
-
-
-res_ce_values
-
-
-# force plots
-
-# something we didnt
-
-# Some comoinations which are not shown
-
-# counterfactuals for the same
-
-# age integer va non.integer
 
 
 
