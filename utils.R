@@ -690,3 +690,126 @@ sv_force_shapviz_mod2 <- function(shap_dt1,shap_dt2,b,feature_vals_dt, row_id = 
   }
   p
 }
+
+# Waterfall plot that shows interactions
+plot_waterfall <- function(object, row_id = 1L, max_display = 10L,
+                           order_fun = function(s) order(abs(s)),
+                           fill_colors = c("#f7d13d", "#a52c60"),
+                           format_shap = getOption("shapviz.format_shap"),
+                           format_feat = getOption("shapviz.format_feat"),
+                           contrast = TRUE, show_connection = TRUE,
+                           show_annotation = TRUE, annotation_size = 3.2,
+                           ...) {
+  object <- object[row_id, ]
+  b <- get_baseline(object)
+  dat <- .make_dat(object, format_feat = format_feat, sep = " = ")
+  if (nrow(dat) > max_display) {
+    dat <- shapviz:::.collapse(dat, max_display = max_display)
+  }
+  m <- nrow(dat)
+
+  # Add order dependent columns
+  dat <- dat[order_fun(dat$S), ]
+  dat$i <- seq_len(m)
+  dat$to <- cumsum(dat$S) + b
+  dat$from <- shapviz:::.lag(dat$to, default = b)
+
+  # Make a waterfall plot
+  height <- grid::unit(1 / (1 + 2 * m), "npc")
+
+  p <- ggplot2::ggplot(
+    dat,
+    ggplot2::aes(
+      xmin = from,
+      xmax = to,
+      y = stats::reorder(label, i),
+      fill = factor(to < from, levels = c(FALSE, TRUE))
+    )
+  ) +
+    gggenes::geom_gene_arrow(
+      show.legend = FALSE,
+      arrowhead_width = grid::unit(2, "mm"),
+      arrowhead_height = height,
+      arrow_body_height = height
+    ) +
+    ggfittext::geom_fit_text(
+      ggplot2::aes(label = paste0(ifelse(S > 0, "+", ""), format_shap(S))),
+      show.legend = FALSE,
+      contrast = contrast,
+      ...
+    ) +
+    ggplot2::scale_fill_manual(values = fill_colors, drop = FALSE) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(
+      panel.border = ggplot2::element_blank(),
+      panel.grid.minor = ggplot2::element_blank(),
+      panel.grid.major.x = ggplot2::element_blank(),
+      axis.line.x = ggplot2::element_line(),
+      axis.ticks.y = ggplot2::element_blank()
+    ) +
+    ggplot2::labs(y = ggplot2::element_blank(), x = "Prediction")
+
+  if (show_connection) {
+    p <- p +
+      ggplot2::geom_segment(
+        ggplot2::aes(x = to, xend = to, y = i, yend = shapviz:::.lag(i, lead = TRUE, default = m)),
+        linewidth = 0.3,
+        linetype = 2
+      )
+  }
+  if (show_annotation) {
+    full_range <- c(as.numeric(dat[m, "to"]), as.numeric(dat[1L, "from"]))
+    p <- p +
+      ggplot2::annotate(
+        "segment",
+        x = full_range,
+        xend = full_range,
+        y = c(m, 1),
+        yend = c(m, 1) + m * c(0.075, -0.075) + 0.13 * c(1, -1),
+        linewidth = 0.3,
+        linetype = 2
+      ) +
+      ggplot2::annotate(
+        "text",
+        x = full_range,
+        y = c(m, 1) + m * c(0.1, -0.1) + 0.15 * c(1, -1),
+        label = paste0(c("logistic(f(x))=", "logistic(E[f(x)])="), format_shap(full_range)),
+        size = annotation_size
+      ) +
+      ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0.05, 0.12))) +
+      ggplot2::scale_y_discrete(expand = ggplot2::expansion(add = 0.3, mult = 0.2)) +
+      ggplot2::coord_cartesian(clip = "off")
+  }
+  p
+}
+
+# Necessary for waterfall plot (see below)
+.make_dat <- function(object, format_feat, sep = " = ") {
+  ints <- object$S_inter
+  dimnames(ints)[[1]] <- 1:(dim(ints)[1])
+
+  # Remove lower part of matrix
+  for (i in 1:dim(ints)[1]) {
+    ints[i,,][lower.tri(ints[i,,])] <- NA
+  }
+
+  dt <- as.data.table(ints)
+  dt[, id := as.numeric(V1)]
+  dt[, var := paste(V2, V3, sep = " - ")]
+  dt[V2 == V3, var := V2]
+  dt[, degree := 2]
+  dt[V2 == V3, degree := 1]
+
+  labels <- data.table(feat = colnames(object$X),
+                       label = paste(colnames(object$X), format_feat(object$X), sep = sep))
+  dt <- merge(merge(dt, labels, by.x = "V2", by.y = "feat", all.x = TRUE),
+              labels, by.x = "V3", by.y = "feat", all.x = TRUE)
+  dt[label.x == label.y, label.y := ""]
+  dt[label.y != "", label.y := paste0(", ", label.y)]
+  dt[, label := paste0(label.x, label.y)]
+  #dt[, S := format_feat(value)]
+  dt[, S := value]
+
+  dt[, .(S, label)]
+}
+

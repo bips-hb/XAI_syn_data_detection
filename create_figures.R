@@ -55,10 +55,10 @@ ggsave("figures/model_performance/model_performance_examples.pdf", width = 8, he
 # Plot for correct and incorrect predictions
 thres1 <- 0.6
 thres2 <- 0.8
-df <- res_perf[metric == "Accuracy" & run <= 5, 
-               .(correct = sum(value > thres2), 
+df <- res_perf[metric == "Accuracy" & run <= 5,
+               .(correct = sum(value > thres2),
                  middle = sum(value > thres1 & value <= thres2),
-                 incorrect = sum(value <= thres1)), 
+                 incorrect = sum(value <= thres1)),
                by = c("syn_name", "model_name", "train")]
 df <- melt(df, id.vars = c("syn_name", "model_name", "train"))
 
@@ -68,16 +68,16 @@ res_fill <- res_fill[value != max_sum, ]
 res_fill$variable <- "NA"
 res_fill$value <- max_sum - res_fill$value
 df <- rbind(df, res_fill)
-df$syn_name <- factor(df$syn_name, 
+df$syn_name <- factor(df$syn_name,
                       levels = rev(c("TabSyn", "CTGAN", "TVAE", "CTAB-GAN+", "ARF", "synthpop")))
 
 df$variable <- factor(df$variable, levels = c("correct", "middle", "incorrect", "NA"),
-                      labels = c(paste0("Above ", thres2 * 100, "%"), 
+                      labels = c(paste0("Above ", thres2 * 100, "%"),
                                  paste0("Between ", thres1 * 100, "% and ", thres2 * 100, "%"),
                                  paste0("Below ", thres1 * 100, "%"), "NA"))
 
 # Selection
-ggplot(df[train == "test data"], 
+ggplot(df[train == "test data"],
        aes(x = value, y = syn_name, fill = variable)) +
   geom_bar(stat = "identity", position = "stack", width = 0.9) +
   geom_text(aes(label = ifelse(value > 10, value, "")), position = position_stack(vjust = 0.5)) +
@@ -104,7 +104,7 @@ ggsave("figures/model_performance/model_performance_full.pdf", width = 12, heigh
 ################################################################################
 #                           RESEARCH QUESTION 1 (Q1)
 #
-#       Which features and feature interactions were most challenging 
+#       Which features and feature interactions were most challenging
 #                       for the generative model?
 ################################################################################
 res_q1 <- data.table(readRDS("./results/Q1/feature_importance.rds"))
@@ -114,7 +114,7 @@ res_treeshap <- c(
   readRDS("./results/Q3/intershap_3.rds"),
   readRDS("./results/Q3/intershap_4.rds")
 )
-  
+
 
 # Plot for adult_complete ------------------------------------------------------
 
@@ -130,7 +130,7 @@ res_adult <- lapply(res_treeshap, function(a) {
 res_adult <- res_adult[!sapply(res_adult, is.null)]
 df_marginal_shap <- rbindlist(lapply(res_adult, function(a) {
   values <- colMeans(abs(a$S))
-  data.frame(value = as.numeric(values), 
+  data.frame(value = as.numeric(values),
              feature = names(values),
              method = "|TreeSHAP|")
 }))
@@ -157,9 +157,9 @@ df <- df_interact_shap[var %in% vi_top$var]
 df[, degree := factor(degree)]
 df[, var := factor(var, levels = rev(vi_top$var))]
 df$type <- "TreeSHAP (interactions)"
-p2 <- ggplot(df, aes(x = var, y = value, fill = degree)) + 
+p2 <- ggplot(df, aes(x = var, y = value, fill = degree)) +
   geom_boxplot() +
-  coord_flip() + 
+  coord_flip() +
   scale_fill_viridis_d(direction = -1) +
   theme(legend.position = "top") +
   facet_grid(cols = vars(type), scales = "free_x") +
@@ -184,7 +184,7 @@ res_nursery <- lapply(res_treeshap, function(a) {
 res_nursery <- res_nursery[!sapply(res_nursery, is.null)]
 df_marginal_shap <- rbindlist(lapply(res_nursery, function(a) {
   values <- colMeans(abs(a$S))
-  data.frame(value = as.numeric(values), 
+  data.frame(value = as.numeric(values),
              feature = names(values),
              method = "|TreeSHAP|")
 }))
@@ -211,9 +211,9 @@ df <- df_interact_shap[var %in% vi_top$var]
 df[, degree := factor(degree)]
 df[, var := factor(var, levels = rev(vi_top$var))]
 df$type <- "TreeSHAP (interactions)"
-p2 <- ggplot(df, aes(x = var, y = value, fill = degree)) + 
+p2 <- ggplot(df, aes(x = var, y = value, fill = degree)) +
   geom_boxplot() +
-  coord_flip() + 
+  coord_flip() +
   scale_fill_viridis_d(direction = -1) +
   theme(legend.position = "top") +
   facet_grid(cols = vars(type), scales = "free_x") +
@@ -246,7 +246,7 @@ tmp <- lapply(unique(df$feature), function(feat) {
   df_pdp <- df[feature == feat & method == "pdp" & real != "both", ]
   df_pdp_full <- df[feature == feat & method == "pdp", ]
   df_rug_feat <- df_rug[variable == feat, ]
-  
+
   if (all(df_ice$feat_type == "numeric")) {
     df_rug_feat$gridpoint <- df_rug_feat$value
     p <- ggplot(mapping = aes(x = as.numeric(as.character(gridpoint)))) +
@@ -263,10 +263,10 @@ tmp <- lapply(unique(df$feature), function(feat) {
       geom_bar(stat = "identity", data = df_rug_feat, aes(y = value, x = count, fill = real), alpha = 0.5, inherit.aes = FALSE) +
       labs(x = "Prediction", y = "Feature value", fill = NULL) +
       facet_grid(cols = vars(feature), labeller = function(s) paste0("Feature: ", s)) +
-      geom_boxplot() + 
+      geom_boxplot() +
       theme(legend.position = "top")
   }
-  
+
   ggsave(paste0("figures/Q2/ICE_adult_complete_", feat, ".pdf"), p, width = 8, height = 5)
 })
 
@@ -276,7 +276,7 @@ tmp <- lapply(unique(df$feature), function(feat) {
   df_pdp <- df[feature == feat & method == "pdp" & real == "both", ]
   df_ale <- rbind(df_ale, df_pdp)
   df_rug_feat <- df_rug[variable == feat, ]
-  
+
   if (all(df_ale$feat_type == "numeric")) {
     df_rug_feat$gridpoint <- df_rug_feat$value
     p <- ggplot(df_ale, aes(x = as.numeric(as.character(gridpoint)))) +
@@ -297,7 +297,7 @@ tmp <- lapply(unique(df$feature), function(feat) {
       labs(x = "Prediction", y = "Feature value", fill = NULL) +
       theme(legend.position = "top")
   }
-  
+
   ggsave(paste0("figures/Q2/ALE_adult_complete_", feat, ".pdf"), p, width = 8, height = 5)
 })
 
@@ -311,7 +311,7 @@ tmp <- lapply(unique(df$feature), function(feat) {
   df_pdp <- df[feature == feat & method == "pdp" & real == "both", ]
   df_ale <- rbind(df_ale, df_pdp)
   df_rug_feat <- df_rug[variable == feat, ]
-  
+
   if (all(df_ale$feat_type == "numeric")) {
     df_rug_feat$gridpoint <- df_rug_feat$value
     p <- ggplot(df_ale, aes(x = as.numeric(as.character(gridpoint)))) +
@@ -331,7 +331,7 @@ tmp <- lapply(unique(df$feature), function(feat) {
       labs(x = "Prediction", y = "Feature value", fill = NULL) +
       theme(legend.position = "top")
   }
-  
+
   ggsave(paste0("figures/Q2/ALE_nursery_", feat, ".pdf"), p, width = 8, height = 5)
 })
 
@@ -437,6 +437,92 @@ p2 <- sv_force_shapviz_mod2(ctree_dt[rowid_test==these_rowid[1],..features_cols]
                    labels=c("ctree","independence"))
 
 ggsave(paste0("figures/Q3/Q3_adult_complete_condshap_ctree_indep_comp_together_test.pdf"), p2 , width = 8, height = 4)
+
+
+
+### Producing pdf with all plots
+
+plot_ctree_all <- plot_indep_all <- list()
+for(i in seq_along(rowid_test_vec)){
+  plot_ctree_all[[i]] <- sv_force_shapviz_mod(ctree_dt[rowid_test==rowid_test_vec[i],..features_cols],
+                                          b=0.5,
+                                          feature_vals_dt[i,..features_cols],
+                                          row_id = 1,
+                                          max_display=5,
+                                          fill_colors = c("darkgreen","darkred"))+ggtitle("Conditional")
+
+  plot_indep_all[[i]] <- sv_force_shapviz_mod(indep_dt[rowid_test==rowid_test_vec[i],..features_cols],
+                                          b=0.5,
+                                          feature_vals_dt[i,..features_cols],
+                                          row_id = 1,
+                                          max_display=5,
+                                          fill_colors = c("darkgreen","darkred"))+ggtitle("Marginal")
+
+}
+
+## Save the plots with one element per page in pdf
+pdf("figures/Q3/Q3_adult_complete_condshap_syn_all.pdf",width = 10, height = 6)
+#for(i in 1:10){
+for(i in seq_along(rowid_test_vec)){
+  a <- (plot_ctree_all[[i]] / plot_indep_all[[i]]) + patchwork::plot_annotation(
+    title = paste0("Shapley value feature attributions, syntehtic data, test id = ",rowid_test_vec[i]),
+    theme = theme(plot.title = element_text(hjust = 0.5)))
+  print(a)
+}
+dev.off()
+
+
+
+
+### intershap
+
+res_intershap <- readRDS("./results/Q3/intershap.rds")
+
+
+info_dt_intershap <- as.data.table(t(sapply(res_intershap, function(x) unlist(x$info[c("dataset","syn","run_model","detect_model")]))))
+info_dt_intershap[,row_id:=.I]
+
+# First considering synthetic observations
+this_intershap_index <- info_dt_intershap[dataset=="adult_complete" &
+                                          syn=="TabSyn" &
+                                          run_model==2 &
+                                          detect_model=="xgboost",row_id]
+
+this_res_intershap <- res_intershap[[this_intershap_index]]$results
+this_info_intershap <- res_intershap[[this_intershap_index]]$info
+
+# Getting observations to plot
+relevant_test_obs <- fread("./prepare_local/relevant_test_obs.csv")
+
+this_relevant_test_obs <- relevant_test_obs[dataset_name=="adult_complete" &
+                                              syn_name == "TabSyn" &
+                                              run_model==2 &
+                                              model_name == "xgboost" &
+                                              type == "syn"]
+
+shapviz_row_mapper <- data.table(rowid_testobs = this_relevant_test_obs[,rowid])
+shapviz_row_mapper[,shapviz_rowno := match(rowid_testobs,this_info_intershap$rowid)]
+
+
+plot_intershap_syn_list <- list()
+for(i in seq_len(shapviz_row_mapper[,.N])){
+  plot_intershap_syn_list[[i]] <- plot_waterfall(this_res_intershap,
+                                                 row_id = shapviz_row_mapper[i,shapviz_rowno],
+                                                 fill_colors = c("darkgreen","darkred"))+
+    ggplot2::ggtitle(paste0("Shapley main + interaction values, test id = ",shapviz_row_mapper[i,rowid_testobs]))
+}
+
+## Save the plots with one element per page in pdf
+pdf("figures/Q3/Q3_adult_complete_intershap_syn.pdf",width = 10, height = 6)
+for(i in seq_len(shapviz_row_mapper[,.N])){
+#for(i in 1:5){
+  print(plot_intershap_syn_list[[i]])
+}
+dev.off()
+
+#### TODO: Find nice ids
+
+# 1353 is nice for both condshap and intershap (shows different effects for education_num and age)
 
 
 
