@@ -22,16 +22,16 @@ cli_div(theme = list(span.emph = list(color = "#3c77b9")))
 set.seed(42)
 
 # Manage number of cores and RAM
-n_threads <- 200L
+n_threads <- 250L
 
 options(future.globals.maxSize = 25000 * 1024^2)
 Sys.setenv(R_RANGER_NUM_THREADS = n_threads)
 Sys.setenv(OMP_THREAD_LIMIT = n_threads)
 
 # Global arguments for the PFI method
-NUM_SAMPLES <- 1000
-NUM_SAMPLES_ICE <- 100
-NUM_GRID_POINTS <- 200
+NUM_SAMPLES <- Inf
+NUM_SAMPLES_ICE <- 150
+NUM_GRID_POINTS <- 250
 
 # Define global arguments
 filter_df <- data.table(
@@ -142,7 +142,7 @@ res <- lapply(seq_len(nrow(df)), function(i) {
   
   # PDP ------------------------------------------------------------------------
   res_pdp <- rbind(
-    cbind(res[, .(.value = mean(.value)), 
+    cbind(res[, .(.value = mean(.value) - mean(preds$preds)), 
                   by = c(".borders", ".type", ".feature", "feat_type")], real = "both"),
     cbind(res[real == "Real", .(.value = mean(.value)), 
                   by = c(".borders", ".type", ".feature", "feat_type")], real = "Real"),

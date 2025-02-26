@@ -23,8 +23,8 @@ set.seed(42)
 
 # Manage number of cores and RAM
 # Note: The total number of cores used will be 'mc.cores * n_threads'
-n_threads <- 100L
-mc.cores <-10L
+n_threads <- 200L
+mc.cores <-1L
 
 options(future.globals.maxSize = 25000 * 1024^2)
 Sys.setenv(R_RANGER_NUM_THREADS = n_threads)
@@ -48,7 +48,7 @@ filter_df <- data.table(
   dataset_name = rev(c("adult_complete", "nursery")),
   model_name = c("xgboost"),
   syn_name = rev(c("TabSyn", "CTGAN")),
-  run_model = c(8,2)
+  run_model = rep(1:10,each=2)
 )
 
 

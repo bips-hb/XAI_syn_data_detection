@@ -1,1 +1,0 @@
-This folder should contain all figures for the paper
