@@ -699,6 +699,7 @@ plot_waterfall <- function(object, row_id = 1L, max_display = 10L,
                            format_feat = getOption("shapviz.format_feat"),
                            contrast = TRUE, show_connection = TRUE,
                            show_annotation = TRUE, annotation_size = 3.2,
+                           marg_int_colors = c("black","red"),
                            ...) {
   object <- object[row_id, ]
   b <- get_baseline(object)
@@ -713,6 +714,8 @@ plot_waterfall <- function(object, row_id = 1L, max_display = 10L,
   dat$i <- seq_len(m)
   dat$to <- cumsum(dat$S) + b
   dat$from <- shapviz:::.lag(dat$to, default = b)
+
+  marg_or_int <- ifelse(grepl(",",dat$label), "int", "marg")
 
   # Make a waterfall plot
   height <- grid::unit(1 / (1 + 2 * m), "npc")
@@ -780,7 +783,7 @@ plot_waterfall <- function(object, row_id = 1L, max_display = 10L,
       ggplot2::scale_y_discrete(expand = ggplot2::expansion(add = 0.3, mult = 0.2)) +
       ggplot2::coord_cartesian(clip = "off")
   }
-  p
+  p+theme(axis.text.y = element_text(color = ifelse(marg_or_int=="int", marg_int_colors[2], marg_int_colors[1])))
 }
 
 # Necessary for waterfall plot (see below)

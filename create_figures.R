@@ -548,21 +548,60 @@ shapviz_row_mapper <- data.table(rowid_testobs = this_relevant_test_obs[,rowid])
 shapviz_row_mapper[,shapviz_rowno := match(rowid_testobs,this_info_intershap$rowid)]
 
 
-plot_intershap_syn_list <- list()
-for(i in seq_len(shapviz_row_mapper[,.N])){
-  plot_intershap_syn_list[[i]] <- plot_waterfall(this_res_intershap,
-                                                 row_id = shapviz_row_mapper[i,shapviz_rowno],
-                                                 fill_colors = c("darkgreen","darkred"))+
-    ggplot2::ggtitle(paste0("Shapley main + interaction values, test id = ",shapviz_row_mapper[i,rowid_testobs]))
-}
+this_rowid_test= 1353
 
-## Save the plots with one element per page in pdf
-pdf("figures/Q3/Q3_adult_complete_intershap_syn.pdf",width = 10, height = 6)
-for(i in seq_len(shapviz_row_mapper[,.N])){
-#for(i in 1:5){
-  print(plot_intershap_syn_list[[i]])
-}
+
+pl_inter <- plot_waterfall(this_res_intershap,
+               row_id = shapviz_row_mapper[rowid_testobs==this_rowid_test,shapviz_rowno],
+               fill_colors = c("darkgreen","darkred"),
+               marg_int_colors = c("orange","purple4"),annotation_size = 4)+
+#               marg_int_colors = viridisLite::viridis(2))+
+  theme(plot.title = element_text(size = 16,face = "bold",hjust=0.5),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 14),
+        axis.title.y = element_text(size=16, face = "bold"))+
+  patchwork::plot_annotation(
+    title = paste0("Shapley interaction values, synthetic data, test id = ",shapviz_row_mapper[rowid_testobs==this_rowid_test,rowid_testobs]),
+    theme = theme(plot.title = element_text(hjust = 0.5)))
+
+pdf(paste0("figures/Q3/Q3_adult_complete_inter_syn_id_",this_rowid_test,".pdf"),width = 10, height = 6)
+print(pl_inter)
 dev.off()
+
+
+# real
+this_relevant_test_obs <- relevant_test_obs[dataset_name=="adult_complete" &
+                                              syn_name == "TabSyn" &
+                                              run_model==2 &
+                                              model_name == "xgboost" &
+                                              type == "real"]
+
+shapviz_row_mapper <- data.table(rowid_testobs = this_relevant_test_obs[,rowid])
+shapviz_row_mapper[,shapviz_rowno := match(rowid_testobs,this_info_intershap$rowid)]
+
+
+this_rowid_test= 16025
+
+
+
+pl_inter <- plot_waterfall(this_res_intershap,
+                           row_id = shapviz_row_mapper[rowid_testobs==this_rowid_test,shapviz_rowno],
+                           fill_colors = c("darkgreen","darkred"),
+                           marg_int_colors = c("orange","purple4"),annotation_size = 4)+
+  #               marg_int_colors = viridisLite::viridis(2))+
+  theme(plot.title = element_text(size = 16,face = "bold",hjust=0.5),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 14),
+        axis.title.y = element_text(size=16, face = "bold"))+
+  patchwork::plot_annotation(
+    title = paste0("Shapley interaction values, real data, test id = ",shapviz_row_mapper[rowid_testobs==this_rowid_test,rowid_testobs]),
+    theme = theme(plot.title = element_text(hjust = 0.5)))
+
+pdf(paste0("figures/Q3/Q3_adult_complete_inter_real_id_",this_rowid_test,".pdf"),width = 10, height = 6)
+print(pl_inter)
+dev.off()
+
+
 
 #### TODO: Find nice ids
 
@@ -581,8 +620,6 @@ data_test[real=="Real",cor(age,education_num)]
 data_test[real=="Synthetic",cor(age,education_num)]
 
 
-
-# CF: 1353 + another one without
 
 
 ################################################################################
