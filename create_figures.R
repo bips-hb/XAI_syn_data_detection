@@ -381,7 +381,6 @@ feature_vals_dt <- features_dt[,..features_cols]
 ctree_dt <- dcast(this_res_condshap[approach=="ctree",.(rowid_test,feature,value)],formula = rowid_test~feature)
 indep_dt <- dcast(this_res_condshap[approach=="independence",.(rowid_test,feature,value)],formula = rowid_test~feature)
 
-# Compare their sizes
 rowid_test_vec <- ctree_dt[,rowid_test]
 
 comp_dt <- data.table(rowid_test=rowid_test_vec,meandiff=rowMeans(abs(ctree_dt[,-1]-indep_dt[,-1])))
@@ -522,11 +521,23 @@ dev.off()
 
 #### TODO: Find nice ids
 
+# Q1: Different coloring for main and interaction effects in the waterfall plot?
+# Q2: How to visualize the explanations?
+#
+
 # 1353 is nice for both condshap and intershap (shows different effects for education_num and age)
+# Intuition for difference between conditional and marginal:
+# Stronger correlation locally for the younger people.
+data_test[real=="Real" & age<=20,cor(age,education_num)]
+data_test[real=="Synthetic" & age<=20,cor(age,education_num)]
+
+data_test[,cor(age,education_num)]
+data_test[real=="Real",cor(age,education_num)]
+data_test[real=="Synthetic",cor(age,education_num)]
 
 
 
-
+# CF: 1353 + another one without
 
 
 ################################################################################
