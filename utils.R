@@ -558,7 +558,7 @@ sv_force_shapviz_mod <- function(shap_dt,b,feature_vals_dt, row_id = 1L, max_dis
         "text",
         x = b_pred,
         y = c(0.4, 0.65),
-        label = paste0(c("E[f(x)]=", "f(x)="), format_shap(b_pred)),
+        label = paste0(c("E[C(x)]=", "C(x)="), format_shap(b_pred)),
         size = annotation_size
       )
   }
@@ -684,7 +684,7 @@ sv_force_shapviz_mod2 <- function(shap_dt1,shap_dt2,b,feature_vals_dt, row_id = 
         "text",
         x = b_pred,
         y = c(0.4, 0.65),
-        label = paste0(c("E[f(x)]=", "f(x)="), format_shap(b_pred)),
+        label = paste0(c("E[C(x)]=", "C(x)="), format_shap(b_pred)),
         size = annotation_size
       )
   }
@@ -750,7 +750,7 @@ plot_waterfall <- function(object, row_id = 1L, max_display = 10L,
       axis.line.x = ggplot2::element_line(),
       axis.ticks.y = ggplot2::element_blank()
     ) +
-    ggplot2::labs(y = ggplot2::element_blank(), x = "Prediction")
+    ggplot2::labs(y = ggplot2::element_blank(), x = "Logodds prediction")
 
   if (show_connection) {
     p <- p +
@@ -776,7 +776,7 @@ plot_waterfall <- function(object, row_id = 1L, max_display = 10L,
         "text",
         x = full_range,
         y = c(m, 1) + m * c(0.1, -0.1) + 0.15 * c(1, -1),
-        label = paste0(c("logistic(f(x))=", "logistic(E[f(x)])="), format_shap(full_range)),
+        label = paste0(c("logistic(C(x))=", "logistic(E[C(x)])="), format_shap(full_range)),
         size = annotation_size
       ) +
       ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0.05, 0.12))) +
