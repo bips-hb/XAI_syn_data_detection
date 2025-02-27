@@ -31,7 +31,7 @@ res_perf <- data.table(readRDS("./results/model_performance/model_performance.rd
 # Model Performance Examples ---------------------------------------------------
 df <- res_perf[
   ((dataset == "adult_complete" & syn_name == "TabSyn") |
-     (dataset == "nursery" & syn_name == "CTGAN")) &
+     (dataset == "nursery" & syn_name == "CTGAN")) & 
     model_name == "xgboost" & metric == "Accuracy"]
 df$dataset <- factor(df$dataset, levels = c("adult_complete", "nursery"),
                      labels = c("Adult", "Nursery"))
@@ -40,8 +40,8 @@ df$train <- factor(df$train, levels = c("train data", "test data"),
 p1 <- ggplot(df, aes(x = train, y = value)) +
   geom_boxplot(fill = "darkgray") +
   facet_grid(cols = vars(dataset), scales = "free") +
-  labs(x = NULL, fill = "Metric", y = "Accuracy") +
-  theme(legend.position = "top") +
+  labs(x = NULL, fill = "Metric", y = "Accuracy (XGBoost)") +
+  theme(legend.position = "top") + 
   scale_y_continuous(limits = c(0.5, 1), labels = scales::percent) +
   geom_hline(yintercept = 0.5, linetype = "dashed")
 
@@ -53,10 +53,10 @@ p1 <- ggplot(df, aes(x = train, y = value)) +
 # Plot for correct and incorrect predictions
 thres1 <- 0.6
 thres2 <- 0.8
-df <- res_perf[metric == "Accuracy" & run <= 5,
-               .(correct = sum(value > thres2),
+df <- res_perf[metric == "Accuracy" & run <= 5, 
+               .(correct = sum(value > thres2), 
                  middle = sum(value > thres1 & value <= thres2),
-                 incorrect = sum(value <= thres1)),
+                 incorrect = sum(value <= thres1)), 
                by = c("syn_name", "model_name", "train")]
 df <- melt(df, id.vars = c("syn_name", "model_name", "train"))
 
@@ -66,17 +66,18 @@ res_fill <- res_fill[value != max_sum, ]
 res_fill$variable <- "NA"
 res_fill$value <- max_sum - res_fill$value
 df <- rbind(df, res_fill)
-df$syn_name <- factor(df$syn_name,
+df$syn_name <- factor(df$syn_name, 
                       levels = rev(c("TabSyn", "CTGAN", "TVAE", "CTAB-GAN+", "ARF", "synthpop")))
-df$model_name <- factor(df$model_name, levels = c("logReg", "ranger", "xgboost"))
+df$model_name <- factor(df$model_name, levels = c("logReg", "ranger", "xgboost"),
+                        labels = c("Logistic Regression", "Random Forest", "XGBoost"))
 
 df$variable <- factor(df$variable, levels = c("correct", "middle", "incorrect", "NA"),
-                      labels = c(paste0("Above ", thres2 * 100, "%"),
+                      labels = c(paste0("Above ", thres2 * 100, "%"), 
                                  paste0("Between ", thres1 * 100, "% and ", thres2 * 100, "%"),
                                  paste0("Below ", thres1 * 100, "%"), "NA"))
 
 # Selection
-p2 <- ggplot(df[train == "test data"],
+p2 <- ggplot(df[train == "test data"], 
              aes(x = value, y = syn_name, fill = variable)) +
   geom_bar(stat = "identity", position = "stack", width = 0.9) +
   geom_text(aes(label = ifelse(value > 10, value, "")), position = position_stack(vjust = 0.5)) +
