@@ -34,16 +34,19 @@ options(mc.cores = mc.cores)
 # Global arguments for the CE method
 NUM_TRAIN <- 10^4 # Number of samples for the calculation
 GENERATE_K = 5*10^5#10^4 # TODO: Increse to at least 10^5
-TO_EXPLAIN = c("real","syn") # Which type of explanatins to explain (one or both of "real", "syn")
+TO_EXPLAIN = "syn" # Which type of explanatins to explain (one or both of "real", "syn")
 PATH_relevant_test_obs <- "./prepare_local/relevant_test_obs.csv"
+specific_test_obs <- c(1353)
+NO_CF <- 100
 
 # Define global arguments
 filter_df <- data.table(
-  dataset_name = rev(c("adult_complete", "nursery")),
+  dataset_name = "adult_complete",
   model_name = c("xgboost"),
-  syn_name = rev(c("TabSyn", "CTGAN")),
-  run_model = rep(1:10,each=2)
+  syn_name = c("TabSyn"),
+  run_model = c(2)
 )
+
 
 
 # Load utility methods and create dirs -----------------------------------------
@@ -87,7 +90,9 @@ if(file.exists(PATH_relevant_test_obs)){
 
 dt_test_obs <- fread("./prepare_local/relevant_test_obs.csv")
 dt_test_obs <- dt_test_obs[filter_df, on = c("dataset_name", "model_name", "syn_name", "run_model")]
-
+if(!is.null(specific_test_obs)){
+  dt_test_obs <- dt_test_obs[rowid %in% specific_test_obs]
+}
 
 
 # Running cPFI -----------------------------------------------------------------
@@ -155,21 +160,23 @@ res <- lapply(seq_len(nrow(df)), function(i) {
                                      x_train = x_train,
                                      predict_model = pred_fun,
                                      c_int = c(0,0.5), # IMPORTANT
-                                     fixed_features = NULL,
+                                     fixed_features = "fnlwgt",
                                      process.measures = c("validation","L0","gower"),
                                      fit.seed = 123,
                                      fit.autoregressive_model = "rpart",
                                      generate.K = GENERATE_K,
-                                     generate.seed = 123)
+                                     generate.seed = 123,
+                                     process.return_best_k = NO_CF)
 
-    melted_ce_values <- melt(data.table(rowid_test = rowid_syn, expl_syn$cf[,-c(1,2)]),
+    melted_ce_values <- melt(data.table(rowid_test = rowid_syn, expl_syn$cf[,-c(1)]),
                              id.vars="rowid_test",variable.factor = FALSE,value.factor = FALSE)
     melted_org_values <- melt(data.table(rowid_test = rowid_syn, x_explain_syn),
                               id.vars="rowid_test",variable.factor = FALSE,value.factor = FALSE)
 
     res_ce_values <- rbind(res_ce_values,
                            data.table(melted_ce_values,row_type="cf",type="real"),
-                           data.table(melted_org_values,row_type="org",type="real")
+                           data.table(melted_org_values,row_type="org",type="real"),
+                           fill=TRUE
     )
 
     res_ce_measures <- rbind(res_ce_measures,
@@ -189,21 +196,23 @@ res <- lapply(seq_len(nrow(df)), function(i) {
                                     x_train = x_train,
                                     predict_model = pred_fun,
                                     c_int = c(0.5,1), # IMPORTANT
-                                    fixed_features = NULL,
+                                    fixed_features = "fnlwgt",
                                     process.measures = c("validation","L0","gower"),
                                     fit.seed = 123,
                                     fit.autoregressive_model = "rpart",
                                     generate.K = GENERATE_K,
-                                    generate.seed = 123)
+                                    generate.seed = 123,
+                                    process.return_best_k = NO_CF)
 
-    melted_ce_values <- melt(data.table(rowid_test = rowid_syn, expl_syn$cf[,-c(1,2)]),
-                             id.vars="rowid_test",variable.factor = FALSE, value.factor = FALSE)
+    melted_ce_values <- melt(data.table(rowid_test = rowid_syn, expl_syn$cf[,-c(1)]),
+                             id.vars=c("rowid_test","counterfactual_rank"),variable.factor = FALSE, value.factor = FALSE)
     melted_org_values <- melt(data.table(rowid_test = rowid_syn, x_explain_syn),
                               id.vars="rowid_test",variable.factor = FALSE, value.factor = FALSE)
 
     res_ce_values <- rbind(res_ce_values,
                            data.table(melted_ce_values,row_type="cf",type="syn"),
-                           data.table(melted_org_values,row_type="org",type="syn")
+                           data.table(melted_org_values,row_type="org",type="syn"),
+                           fill=TRUE
     )
 
     res_ce_measures <- rbind(res_ce_measures,
@@ -231,8 +240,8 @@ res <- lapply(seq_len(nrow(df)), function(i) {
 
   cli_progress_step("Saving results")
   if (!dir.exists(paste0("./results/Q4"))) dir.create(paste0("./results/Q4"), recursive = TRUE)
-  fwrite(out_ce_values, "./results/Q4/ce_values.csv",append = TRUE)
-  fwrite(out_ce_measures, "./results/Q4/ce_measures.csv",append = TRUE)
+  fwrite(out_ce_values, "./results/Q4/ce_values_extra.csv",append = TRUE)
+  fwrite(out_ce_measures, "./results/Q4/ce_measures_extra.csv",append = TRUE)
 
   NULL # We store things below, so don't return anything
 })

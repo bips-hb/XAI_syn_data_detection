@@ -603,23 +603,6 @@ dev.off()
 
 
 
-#### TODO: Find nice ids
-
-# Q1: Different coloring for main and interaction effects in the waterfall plot?
-# Q2: How to visualize the explanations?
-#
-
-# 1353 is nice for both condshap and intershap (shows different effects for education_num and age)
-# Intuition for difference between conditional and marginal:
-# Stronger correlation locally for the younger people.
-data_test[real=="Real" & age<=20,cor(age,education_num)]
-data_test[real=="Synthetic" & age<=20,cor(age,education_num)]
-
-data_test[,cor(age,education_num)]
-data_test[real=="Real",cor(age,education_num)]
-data_test[real=="Synthetic",cor(age,education_num)]
-
-
 
 
 ################################################################################
@@ -627,47 +610,80 @@ data_test[real=="Synthetic",cor(age,education_num)]
 #
 #             TODO: Add description of the research question
 ################################################################################
-res_ce_values <- fread("./results/Q4/ce_values_final.csv")
-res_ce_measures <- fread("./results/Q4/ce_measures_final.csv")
+
+
+res_ce_values <- fread("./results/Q4/ce_values_extra.csv")
+res_ce_measures <- fread("./results/Q4/ce_measures_extra.csv")
 
 # adult_complete
 
-this_res_ce_measures <- res_ce_measures[dataset_name=="adult_complete" &
-                                          syn_name == "TabSyn" &
-                                          run_model==2 &
-                                          model_name == "xgboost" &
-                                          type == "syn"]
 
-this_res_ce_values <- res_ce_values[dataset_name=="adult_complete" &
-                                          syn_name == "TabSyn" &
-                                          run_model==2 &
-                                          model_name == "xgboost" &
-                                          type == "syn"]
+this_res_ce_measures <- res_ce_measures
+this_res_ce_values <- res_ce_values
+
 
 
 # Reduce to those with the largest L0 measure
-this_res_ce_measures <- this_res_ce_measures[measure_L0 ==max(measure_L0)]
 features_cols <- unique(this_res_ce_values$variable)
 
-tab_final <- NULL
-for(i in seq_len(nrow(this_res_ce_measures))){
-  this_rowid <- this_res_ce_measures[i,rowid_test]
+this_rowid <- 1353
 
-  tmp <- this_res_ce_values[rowid_test==this_rowid,.(variable,value,row_type)]
+these_cf_ranks <- c(1,3,7,8)
+
+
+tab_list <- list()
+tab_final <- NULL
+for(i in seq_along(these_cf_ranks)){
+
+  this_cf_rank <- these_cf_ranks[i]
+
+
+  tmp <- this_res_ce_values[rowid_test==this_rowid & counterfactual_rank%in%c(this_cf_rank,NA),.(variable,value,row_type)]
+
   tab <- data.table(org=tmp[row_type=="org"][,value], cf=tmp[row_type=="cf"][,value])
+
 
 #  tab <- dcast(this_res_ce_values[rowid_test==this_rowid,.(variable,value,row_type)],formula = row_type~variable)
 
-  tab[org!=cf, `:=`(org=paste0("\\textcolor{red}{",org,"}"),
-                    cf=paste0("\\textcolor{red}{",cf,"}"))]
+  #tab[org!=cf, `:=`(org=paste0("\\textcolor{red}{",org,"}"),
+  #                 cf=paste0("\\textcolor{red}{",cf,"}"))]
+  tab[org!=cf, `:=`(cf=paste0("\\textcolor{red}{",cf,"}"))]
 
-  tab_final <- cbind(tab_final,tab)
+  if(i==1){
+    tab_final <- cbind(tab_final,tab)
+  } else {
+    tab_final <- cbind(tab_final,tab[,-1])
+  }
+
+
 }
 
-tab_all <- as.data.frame(tab_final)
-rownames(tab_all) <- features_cols
+tab_all <- tab_final
 
-no_plots <- ceiling(length(this_res_ce_measures[,rowid_test])/2)
+rownames(tab_all) <- feature_cols
+colnames(tab_all)[1] <- "Original"
+colnames(tab_all)[-1] <- paste0("CF",seq_along(these_cf_ranks))
+#addtorow <- list()
+#addtorow$pos <- list(0)
+#addtorow$command <- paste0("Feature",paste0('& \\multicolumn{3}{c|}{ test id = ',this_rowid , '}', collapse=''), '\\\\')
+
+align_vector <- paste0("|l|r|",paste0(rep("r",length(these_cf_ranks)),collapse=""),"|")
+
+caption0 <- paste0("Four counterfactual explanations for a synthetic with test id ",this_rowid, " in the adult data set.")
+
+print(xtable(tab_all,align = align_vector,
+             caption = caption0),
+      sanitize.text.function = identity,
+      sanitize.rownames.function = NULL,
+      include.rownames = TRUE,
+      include.colnames = TRUE,
+      booktabs = TRUE,
+      #add.to.row=addtorow,
+      file = paste0("tables/Q4/Q4_adult_complete_ce_syn_id_",this_rowid,".tex")
+)
+
+
+no_plots <- 1
 
 for(i in seq_len(no_plots)){
   these_plots <- 4*(i-1)+1:4
@@ -678,25 +694,6 @@ for(i in seq_len(no_plots)){
 
   tab <- tab_all[,these_plots]
 
-  addtorow <- list()
-  addtorow$pos <- list(0)
-  addtorow$command <- paste0("Feature",paste0('& \\multicolumn{2}{c|}{ test id = ',these_test_ids , '}', collapse=''), '\\\\')
-
-  align_vector <- paste0("|l|",paste0(rep("rr|",length(these_test_ids)),collapse=""))
-
-  caption0 <- paste0("Counterfactual explanations for the synthetic observations with small probabilities of being real ",
-                     "for the adult data set.",collapse = "")
-
-  print(xtable(tab,align = align_vector,
-               caption = caption0),
-        sanitize.text.function = identity,
-        sanitize.rownames.function = NULL,
-        include.rownames = TRUE,
-        include.colnames = FALSE,
-        booktabs = TRUE,
-        add.to.row=addtorow,
-        file = paste0("tables/Q4/ce_plot_",i,".tex")
-  )
 
 }
 
