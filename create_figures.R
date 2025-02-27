@@ -381,93 +381,138 @@ feature_vals_dt <- features_dt[,..features_cols]
 ctree_dt <- dcast(this_res_condshap[approach=="ctree",.(rowid_test,feature,value)],formula = rowid_test~feature)
 indep_dt <- dcast(this_res_condshap[approach=="independence",.(rowid_test,feature,value)],formula = rowid_test~feature)
 
-rowid_test_vec <- ctree_dt[,rowid_test]
 
-comp_dt <- data.table(rowid_test=rowid_test_vec,meandiff=rowMeans(abs(ctree_dt[,-1]-indep_dt[,-1])))
-these_rowid <- comp_dt[order(-meandiff)][1:4,rowid_test]
+# Plot with ctree and indep shapley values
 
-# Multiple versions
+this_rowid_test= 1353
 
-plot_ctree <- plot_indep <- list()
-for(i in seq_along(these_rowid)){
-  plot_ctree[[i]] <- sv_force_shapviz_mod(ctree_dt[rowid_test==these_rowid[i],..features_cols],
-                                          b=0.5,
-                                          feature_vals_dt,
-                                          row_id = 1,
-                                          max_display=5,
-                                          fill_colors = c("darkgreen","darkred"))+
-    ggplot2::ggtitle(paste0("Ctree, test id = ",these_rowid[i]))+
-    theme(plot.title = element_text(size=10))
 
-  plot_indep[[i]] <- sv_force_shapviz_mod(indep_dt[rowid_test==these_rowid[i],..features_cols],
-                                          b=0.5,
-                                          feature_vals_dt,
-                                          row_id = 1,
-                                          max_display=5,
-                                          fill_colors = c("darkgreen","darkred"))+
-    ggplot2::ggtitle(paste0("Independence, test id = ",these_rowid[i]))+
-    theme(plot.title = element_text(size=10))
+a <- sv_force_shapviz_mod(ctree_dt[rowid_test==this_rowid_test,..features_cols],
+                          b=0.5,
+                          features_dt[rowid_test==this_rowid_test,..features_cols],
+                          row_id = 1,
+                          max_display=5,
+                          fill_colors = c("darkgreen","darkred"),
+                          bar_label_size = 4,
+                          annotation_size = 4)+
+  labs(y="Conditional") +
+  theme(plot.title = element_text(size = 16,face = "bold",hjust=0.5),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 14),
+        axis.title.y = element_text(size=16, face = "bold"))
 
-}
+b <- sv_force_shapviz_mod(indep_dt[rowid_test==this_rowid_test,..features_cols],
+                          b=0.5,
+                          features_dt[rowid_test==this_rowid_test,..features_cols],
+                          row_id = 1,
+                          max_display=5,
+                          fill_colors = c("darkgreen","darkred"),
+                          bar_label_size  = 4,
+                          annotation_size = 4)+
+  labs(y="Marginal") +
+  theme(plot.title = element_text(size = 16,face = "bold",hjust=0.5),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 14),
+        axis.title.y = element_text(size=16, face = "bold"))
 
-library(patchwork)
-pl_ctree <- (patchwork::wrap_plots(plot_ctree) +
-  patchwork::plot_layout(ncol = 1L) + patchwork::plot_annotation(title="ctree"))
-pl_indep <- (patchwork::wrap_plots(plot_indep) +
-      patchwork::plot_layout(ncol = 1L) + patchwork::plot_annotation(title = "independence"))
-
-p1 <- (pl_ctree | pl_indep) + patchwork::plot_annotation(
-  title = "Comparison of ctree and independence approach",
+pl_cond_vs_marg <- (a/b) + patchwork::plot_annotation(
+  title = paste0("Shapley value feature attributions, syntehtic data, test id = ",this_rowid_test),
   theme = theme(plot.title = element_text(hjust = 0.5)))
 
-ggsave(paste0("figures/Q3/Q3_adult_complete_condshap_ctree_indep_comp_separate_test.pdf"), p1, scale = 1.1,width = 10, height = 8)
+pdf(paste0("figures/Q3/Q3_adult_complete_cond_vs_marg_syn_id_",this_rowid_test,".pdf"),width = 10, height = 6)
+print(pl_cond_vs_marg)
+dev.off()
+
+### Real observations ###
+
+this_res_condshap <- res_condshap[dataset_name=="adult_complete" &
+                                    syn_name == "TabSyn" &
+                                    run_model==2 &
+                                    model_name == "xgboost" &
+                                    type == "real"]
 
 
-# Testing to put the forceplots for independence and ctree together
+#### Simplest way to get feature values
+res_ce_values <- fread("./results/Q4/ce_values_final.csv")
+this_res_ce_values <- res_ce_values[dataset_name=="adult_complete" &
+                                      syn_name == "TabSyn" &
+                                      run_model==2 &
+                                      model_name == "xgboost" &
+                                      type == "real"]
 
-p2 <- sv_force_shapviz_mod2(ctree_dt[rowid_test==these_rowid[1],..features_cols],
-                            indep_dt[rowid_test==these_rowid[1],..features_cols],
-                            b=0.5,
-                            feature_vals_dt,
-                            row_id = 1,
-                            max_display=5,
-                            fill_colors = c("darkgreen","darkred"))+
-  scale_y_discrete(breaks=c(1,2),
-                   labels=c("ctree","independence"))
+this_res_ce_values[row_type=="org"]
+features_dt <- dcast(this_res_ce_values[row_type=="org",.(rowid_test,variable,value)],formula = rowid_test~variable)
 
-ggsave(paste0("figures/Q3/Q3_adult_complete_condshap_ctree_indep_comp_together_test.pdf"), p2 , width = 8, height = 4)
+feature_vals_dt <- features_dt[,..features_cols]
+####
+
+# Flattening ctree and indep shapley values
+ctree_dt <- dcast(this_res_condshap[approach=="ctree",.(rowid_test,feature,value)],formula = rowid_test~feature)
+indep_dt <- dcast(this_res_condshap[approach=="independence",.(rowid_test,feature,value)],formula = rowid_test~feature)
 
 
 
 ### Producing pdf with all plots
+rowid_test_vec <- ctree_dt[,rowid_test]
 
 plot_ctree_all <- plot_indep_all <- list()
 for(i in seq_along(rowid_test_vec)){
   plot_ctree_all[[i]] <- sv_force_shapviz_mod(ctree_dt[rowid_test==rowid_test_vec[i],..features_cols],
-                                          b=0.5,
-                                          feature_vals_dt[i,..features_cols],
-                                          row_id = 1,
-                                          max_display=5,
-                                          fill_colors = c("darkgreen","darkred"))+ggtitle("Conditional")
+                                              b=0.5,
+                                              feature_vals_dt[i,..features_cols],
+                                              row_id = 1,
+                                              max_display=5,
+                                              fill_colors = c("darkgreen","darkred"))+ggtitle("Conditional")
 
   plot_indep_all[[i]] <- sv_force_shapviz_mod(indep_dt[rowid_test==rowid_test_vec[i],..features_cols],
-                                          b=0.5,
-                                          feature_vals_dt[i,..features_cols],
-                                          row_id = 1,
-                                          max_display=5,
-                                          fill_colors = c("darkgreen","darkred"))+ggtitle("Marginal")
+                                              b=0.5,
+                                              feature_vals_dt[i,..features_cols],
+                                              row_id = 1,
+                                              max_display=5,
+                                              fill_colors = c("darkgreen","darkred"))+ggtitle("Marginal")
 
 }
 
 ## Save the plots with one element per page in pdf
-pdf("figures/Q3/Q3_adult_complete_condshap_syn_all.pdf",width = 10, height = 6)
+pdf("figures/Q3/Q3_adult_complete_condshap_real_all.pdf",width = 10, height = 6)
 #for(i in 1:10){
 for(i in seq_along(rowid_test_vec)){
   a <- (plot_ctree_all[[i]] / plot_indep_all[[i]]) + patchwork::plot_annotation(
-    title = paste0("Shapley value feature attributions, syntehtic data, test id = ",rowid_test_vec[i]),
+    title = paste0("Shapley value feature attributions, real data, test id = ",rowid_test_vec[i]),
     theme = theme(plot.title = element_text(hjust = 0.5)))
   print(a)
 }
+dev.off()
+
+
+
+
+
+
+this_rowid_test= 16025
+
+
+a <- sv_force_shapviz_mod(ctree_dt[rowid_test==this_rowid_test,..features_cols],
+                          b=0.5,
+                          features_dt[rowid_test==this_rowid_test,..features_cols],
+                          row_id = 1,
+                          max_display=5,
+                          fill_colors = c("darkgreen","darkred"),
+                          bar_label_size = 4,
+                          annotation_size = 4)+
+  labs(y="Conditional") +
+  theme(plot.title = element_text(size = 16,face = "bold",hjust=0.5),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 14),
+        axis.title.y = element_text(size=16, face = "bold"))
+
+
+pl_cond_only <- a + patchwork::plot_annotation(
+  title = paste0("Shapley value feature attributions, real data, test id = ",this_rowid_test),
+  theme = theme(plot.title = element_text(hjust = 0.5)))
+
+pdf(paste0("figures/Q3/Q3_adult_complete_cond_only_real_id_",this_rowid_test,".pdf"),width = 10, height = 4)
+print(pl_cond_only)
 dev.off()
 
 
