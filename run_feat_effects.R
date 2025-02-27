@@ -29,8 +29,8 @@ Sys.setenv(R_RANGER_NUM_THREADS = n_threads)
 Sys.setenv(OMP_THREAD_LIMIT = n_threads)
 
 # Global arguments for the PFI method
-NUM_SAMPLES <- Inf
-NUM_SAMPLES_ICE <- 150
+NUM_SAMPLES <- 10000
+NUM_SAMPLES_ICE <- 200
 NUM_GRID_POINTS <- 250
 
 # Define global arguments
@@ -132,17 +132,12 @@ res <- lapply(seq_len(nrow(df)), function(i) {
     by = ".id")
   
   # ICE results
-  top_idx <- preds$id[seq_len(num_samples_ice %/% 3)]
-  mid_idx <- preds$id[seq(num_samples %/% 2 - num_samples_ice %/% 6, 
-                          num_samples %/% 2 + num_samples_ice %/% 6)]
-  low_idx <- preds$id[seq(num_samples - num_samples_ice %/% 3 + 1, num_samples)]
-  idx <- c(top_idx, mid_idx, low_idx)
-  
-  res_ice <- res[.id %in% idx, ]
+  idx <- sample(res$.id, num_samples_ice)
+  res_ice <- res[.id %in% idx]
   
   # PDP ------------------------------------------------------------------------
   res_pdp <- rbind(
-    cbind(res[, .(.value = mean(.value) - mean(preds$preds)), 
+    cbind(res[, .(.value = mean(.value)), 
                   by = c(".borders", ".type", ".feature", "feat_type")], real = "both"),
     cbind(res[real == "Real", .(.value = mean(.value)), 
                   by = c(".borders", ".type", ".feature", "feat_type")], real = "Real"),
@@ -158,7 +153,7 @@ res <- lapply(seq_len(nrow(df)), function(i) {
                                     features = names(df_test)[1:(ncol(df_test) - 1)],
                                     grid.size = NUM_GRID_POINTS)
   results <- lapply(feat_effect$results, function(x) {
-    x$feat_type <- if (is.numeric(x$.value)) "numeric" else "categorical"
+    x$feat_type <- if (is.numeric(x$.borders)) "numeric" else "categorical"
     x
   })
   res_ale <- rbindlist(results)

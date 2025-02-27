@@ -6,14 +6,7 @@ library(patchwork)
 library(geomtextpath)
 library(rlang)
 library(data.table)
-library(xtable)################################################################################
-#                 Create all Figures for the manuscript
-################################################################################
-library(ggplot2)
-library(cowplot)
-library(geomtextpath)
-library(rlang)
-library(data.table)
+library(xtable)
 
 # Set theme
 theme_set(theme_minimal(base_size = 15))
@@ -38,16 +31,21 @@ res_perf <- data.table(readRDS("./results/model_performance/model_performance.rd
 # Model Performance Examples ---------------------------------------------------
 df <- res_perf[
   ((dataset == "adult_complete" & syn_name == "TabSyn") |
-     (dataset == "nursery" & syn_name == "CTGAN")) & model_name == "xgboost"]
-ggplot(df, aes(x = dataset, y = value, fill = metric)) +
-  geom_boxplot() +
-  geom_texthline(yintercept = 0.5, linetype = "dashed", label = "Random guessing") +
-  facet_grid(cols = vars(train), scales = "free") +
-  scale_fill_brewer(palette = "Dark2") +
-  labs(x = "Dataset", fill = "Metric", y = NULL) +
-  theme(legend.position = "top")
+     (dataset == "nursery" & syn_name == "CTGAN")) & 
+    model_name == "xgboost" & metric == "Accuracy"]
+df$dataset <- factor(df$dataset, levels = c("adult_complete", "nursery"),
+                     labels = c("Adult", "Nursery"))
+df$train <- factor(df$train, levels = c("train data", "test data"),
+                   labels = c("Train", "Test"))
+p1 <- ggplot(df, aes(x = train, y = value)) +
+  geom_boxplot(fill = "darkgray") +
+  facet_grid(cols = vars(dataset), scales = "free") +
+  labs(x = NULL, fill = "Metric", y = "Accuracy") +
+  theme(legend.position = "top") + 
+  scale_y_continuous(limits = c(0.5, 1), labels = scales::percent) +
+  geom_hline(yintercept = 0.5, linetype = "dashed")
 
-ggsave("figures/model_performance/model_performance_examples.pdf", width = 8, height = 5)
+#ggsave("figures/model_performance/model_performance_examples.pdf", width = 4, height = 4)
 
 
 # Whole model performance ------------------------------------------------------
@@ -55,10 +53,10 @@ ggsave("figures/model_performance/model_performance_examples.pdf", width = 8, he
 # Plot for correct and incorrect predictions
 thres1 <- 0.6
 thres2 <- 0.8
-df <- res_perf[metric == "Accuracy" & run <= 5,
-               .(correct = sum(value > thres2),
+df <- res_perf[metric == "Accuracy" & run <= 5, 
+               .(correct = sum(value > thres2), 
                  middle = sum(value > thres1 & value <= thres2),
-                 incorrect = sum(value <= thres1)),
+                 incorrect = sum(value <= thres1)), 
                by = c("syn_name", "model_name", "train")]
 df <- melt(df, id.vars = c("syn_name", "model_name", "train"))
 
@@ -68,27 +66,33 @@ res_fill <- res_fill[value != max_sum, ]
 res_fill$variable <- "NA"
 res_fill$value <- max_sum - res_fill$value
 df <- rbind(df, res_fill)
-df$syn_name <- factor(df$syn_name,
+df$syn_name <- factor(df$syn_name, 
                       levels = rev(c("TabSyn", "CTGAN", "TVAE", "CTAB-GAN+", "ARF", "synthpop")))
+df$model_name <- factor(df$model_name, levels = c("logReg", "ranger", "xgboost"))
 
 df$variable <- factor(df$variable, levels = c("correct", "middle", "incorrect", "NA"),
-                      labels = c(paste0("Above ", thres2 * 100, "%"),
+                      labels = c(paste0("Above ", thres2 * 100, "%"), 
                                  paste0("Between ", thres1 * 100, "% and ", thres2 * 100, "%"),
                                  paste0("Below ", thres1 * 100, "%"), "NA"))
 
 # Selection
-ggplot(df[train == "test data"],
-       aes(x = value, y = syn_name, fill = variable)) +
+p2 <- ggplot(df[train == "test data"], 
+             aes(x = value, y = syn_name, fill = variable)) +
   geom_bar(stat = "identity", position = "stack", width = 0.9) +
   geom_text(aes(label = ifelse(value > 10, value, "")), position = position_stack(vjust = 0.5)) +
   scale_fill_manual(values = c("darkgreen", "darkorange", "darkred", "gray")) +
   scale_x_continuous(expand = c(0,0)) +
-  facet_grid(cols = vars(model_name), rows = vars(train), scales = "free") +
-  labs(x = "Frequency", y = "Synthesizer", fill = "Accuracy") +
+  facet_grid(cols = vars(model_name), scales = "free") +
+  labs(x = "Frequency", y = "Synthesizer", fill = "Test Accuracy") +
   theme(legend.position = "top",
         plot.margin = margin(0,0,0,0))
-ggsave("figures/model_performance/model_performance_selection.pdf", width = 8, height = 4)
 
+# Combine plots
+p <- plot_grid (p2, p1, nrow = 1, rel_widths = c(8, 4), labels = c("(a)", "(b)"))
+
+ggsave("figures/model_performance/model_performance.pdf", width = 12, height = 4)
+
+'
 # Full plot
 ggplot(df, aes(x = value, y = syn_name, fill = variable)) +
   geom_bar(stat = "identity", position = "stack", width = 0.9) +
@@ -100,11 +104,11 @@ ggplot(df, aes(x = value, y = syn_name, fill = variable)) +
   theme(legend.position = "top",
         plot.margin = margin(0,0,0,0))
 ggsave("figures/model_performance/model_performance_full.pdf", width = 12, height = 7)
-
+'
 ################################################################################
 #                           RESEARCH QUESTION 1 (Q1)
 #
-#       Which features and feature interactions were most challenging
+#       Which features and feature interactions were most challenging 
 #                       for the generative model?
 ################################################################################
 res_q1 <- data.table(readRDS("./results/Q1/feature_importance.rds"))
@@ -130,14 +134,15 @@ res_adult <- lapply(res_treeshap, function(a) {
 res_adult <- res_adult[!sapply(res_adult, is.null)]
 df_marginal_shap <- rbindlist(lapply(res_adult, function(a) {
   values <- colMeans(abs(a$S))
-  data.frame(value = as.numeric(values),
+  data.frame(value = as.numeric(values), 
              feature = names(values),
-             method = "|TreeSHAP|")
+             method = "global TreeSHAP")
 }))
 
 # Create plot
 df <- rbind(df_pfi, df_marginal_shap)
-df$type <- ifelse(df$method == "|TreeSHAP|", "Prediction-based", "Loss-based")
+df$type <- ifelse(df$method == "global TreeSHAP", "Prediction-based", "Loss-based")
+df$method <- factor(df$method, levels = c("PFI", "global TreeSHAP"))
 
 p1 <- ggplot(df, aes(y = feature, x = value, fill = method)) +
   geom_boxplot(position = "dodge") +
@@ -156,10 +161,10 @@ vi_top <- df_interact_mean[order(-abs(value))][1:top]
 df <- df_interact_shap[var %in% vi_top$var]
 df[, degree := factor(degree)]
 df[, var := factor(var, levels = rev(vi_top$var))]
-df$type <- "TreeSHAP (interactions)"
-p2 <- ggplot(df, aes(x = var, y = value, fill = degree)) +
+df$type <- "global TreeSHAP (interactions)"
+p2 <- ggplot(df, aes(x = var, y = value, fill = degree)) + 
   geom_boxplot() +
-  coord_flip() +
+  coord_flip() + 
   scale_fill_viridis_d(direction = -1) +
   theme(legend.position = "top") +
   facet_grid(cols = vars(type), scales = "free_x") +
@@ -167,8 +172,8 @@ p2 <- ggplot(df, aes(x = var, y = value, fill = degree)) +
   labs(y = "Importance", x = NULL, fill = "degree")
 
 
-p <- plot_grid(p1, p2, nrow = 1, rel_widths = c(0.6, 0.4), labels = c("A)", "B)"))
-ggsave("figures/Q1/adult_complete.pdf", plot = p, width = 12, height = 5)
+p <- plot_grid(p1, p2, nrow = 1, rel_widths = c(0.6, 0.4), labels = c("(a)", "(b)"))
+ggsave("figures/Q1/Q1_adult_complete.pdf", plot = p, width = 12, height = 5)
 
 # Plot for nursery -------------------------------------------------------------
 
@@ -184,14 +189,16 @@ res_nursery <- lapply(res_treeshap, function(a) {
 res_nursery <- res_nursery[!sapply(res_nursery, is.null)]
 df_marginal_shap <- rbindlist(lapply(res_nursery, function(a) {
   values <- colMeans(abs(a$S))
-  data.frame(value = as.numeric(values),
+  data.frame(value = as.numeric(values), 
              feature = names(values),
-             method = "|TreeSHAP|")
+             method = "global TreeSHAP")
 }))
 
 # Create plot
 df <- rbind(df_pfi, df_marginal_shap)
-df$type <- ifelse(df$method == "|TreeSHAP|", "Prediction-based", "Loss-based")
+df$type <- ifelse(df$method == "global TreeSHAP", "Prediction-based", "Loss-based")
+df$method <- factor(df$method, levels = c("PFI", "global TreeSHAP"))
+
 
 p1 <- ggplot(df, aes(y = feature, x = value, fill = method)) +
   geom_boxplot(position = "dodge") +
@@ -210,19 +217,19 @@ vi_top <- df_interact_mean[order(-abs(value))][1:top]
 df <- df_interact_shap[var %in% vi_top$var]
 df[, degree := factor(degree)]
 df[, var := factor(var, levels = rev(vi_top$var))]
-df$type <- "TreeSHAP (interactions)"
-p2 <- ggplot(df, aes(x = var, y = value, fill = degree)) +
+df$type <- "global TreeSHAP (interactions)"
+p2 <- ggplot(df, aes(x = var, y = value, fill = degree)) + 
   geom_boxplot() +
-  coord_flip() +
+  coord_flip() + 
   scale_fill_viridis_d(direction = -1) +
   theme(legend.position = "top") +
   facet_grid(cols = vars(type), scales = "free_x") +
   geom_hline(yintercept = 0, linetype = "dashed") +
   labs(y = "Importance", x = NULL, fill = "degree")
 
-p <- plot_grid(p1, p2, nrow = 1, rel_widths = c(0.6, 0.4), labels = c("A)", "B)"))
+p <- plot_grid(p1, p2, nrow = 1, rel_widths = c(0.6, 0.4), labels = c("(a)", "(b)"))
 
-ggsave("figures/Q1/nursery.pdf", plot = p, width = 12, height = 5)
+ggsave("figures/Q1/Q1_nursery.pdf", plot = p, width = 12, height = 5)
 
 
 ################################################################################
@@ -233,6 +240,7 @@ ggsave("figures/Q1/nursery.pdf", plot = p, width = 12, height = 5)
 res_q2 <- data.table(readRDS("./results/Q2/feat_effects.rds"))
 res_q2_rugs <- data.table(readRDS("./results/Q2/feat_effects_rugs.rds"))
 num_rugs <- 1000
+num_ice <- 50
 
 set.seed(42)
 
@@ -243,40 +251,49 @@ df_rug <- res_q2_rugs[dataset_name == "adult_complete", ]
 # ICE and grouped PDP plots
 tmp <- lapply(unique(df$feature), function(feat) {
   df_ice <- df[feature == feat & method == "ice", ]
-  df_pdp <- df[feature == feat & method == "pdp" & real != "both", ]
-  df_pdp_full <- df[feature == feat & method == "pdp", ]
+  df_pdp <- df[feature == feat & method == "pdp" & real == "both", ]
   df_rug_feat <- df_rug[variable == feat, ]
-
+  
   if (all(df_ice$feat_type == "numeric")) {
     df_rug_feat$gridpoint <- df_rug_feat$value
+    ids <- sample(unique(df_ice$id), num_ice)
+    df_ice <- df_ice[id %in% ids]
     p <- ggplot(mapping = aes(x = as.numeric(as.character(gridpoint)))) +
       geom_line(data = df_ice, aes(group = id, color = real, y = value), alpha = 0.5, linewidth = 0.3) +
       geom_line(aes(group = real, y = value), data = df_pdp, linewidth = 1.5, color = "black") +
-      geom_line(aes(color = real, y = value), data = df_pdp, linewidth = 1, linetype = "dashed") +
       geom_rug(data = df_rug_feat[sample(nrow(df_rug_feat), min(num_rugs, nrow(df_rug_feat)))], aes(color = real), sides = "b", alpha = 0.5) +
       facet_grid(cols = vars(feature), labeller = function(s) paste0("Feature: ", s)) +
       labs(x = "Feature value", y = "Prediction", color = NULL) +
       theme(legend.position = "top")
   } else {
     df_rug_feat <- df_rug_feat[, .(count = .N / nrow(df_rug_feat)), by = c("real", "value")]
-    p <- ggplot(df_ice, aes(y = gridpoint, x = value, fill = real)) +
+    p <- ggplot(df_ice, aes(y = gridpoint, x = value)) +
       geom_bar(stat = "identity", data = df_rug_feat, aes(y = value, x = count, fill = real), alpha = 0.5, inherit.aes = FALSE) +
       labs(x = "Prediction", y = "Feature value", fill = NULL) +
       facet_grid(cols = vars(feature), labeller = function(s) paste0("Feature: ", s)) +
-      geom_boxplot() +
+      geom_boxplot(fill = "darkgray") + 
+      stat_summary(geom = "crossbar", fun = "mean", color = "darkred", width = 0.75) +
+      geom_vline(xintercept = 0.5, linetype = "dashed") +
       theme(legend.position = "top")
   }
-
+  
   ggsave(paste0("figures/Q2/ICE_adult_complete_", feat, ".pdf"), p, width = 8, height = 5)
+  
+  p
 })
 
-# ALE and PDP plots
+
+# Create plot for paper
+idx <- which(unique(df$feature) %in% c("education_num", "occupation"))
+plots <- tmp[idx]
+p <- plot_grid(plotlist = plots, nrow = 1, labels = c("(a)", "(b)"))
+ggsave("figures/Q2/ICE_adult_complete.pdf", plot = p, width = 12, height = 5)
+
+
+# ALE plots
 tmp <- lapply(unique(df$feature), function(feat) {
   df_ale <- df[feature == feat & method == "ale", ]
-  df_pdp <- df[feature == feat & method == "pdp" & real == "both", ]
-  df_ale <- rbind(df_ale, df_pdp)
   df_rug_feat <- df_rug[variable == feat, ]
-
   if (all(df_ale$feat_type == "numeric")) {
     df_rug_feat$gridpoint <- df_rug_feat$value
     p <- ggplot(df_ale, aes(x = as.numeric(as.character(gridpoint)))) +
@@ -285,56 +302,82 @@ tmp <- lapply(unique(df$feature), function(feat) {
                show.legend = FALSE) +
       geom_hline(yintercept = 0) +
       facet_grid(cols = vars(feature), labeller = function(s) paste0("Feature: ", s)) +
-      geom_line(aes(y = value, linetype = method), alpha = 0.5) +
+      geom_line(aes(y = value), alpha = 0.5) +
       labs(x = "Feature value", y = "Prediction", color = NULL, linetype = NULL) +
       theme(legend.position = "top")
   } else {
     df_rug_feat <- df_rug_feat[, .(count = .N / nrow(df_rug_feat)), by = c("real", "value")]
-    p <- ggplot(df_ale, aes(y = gridpoint, x = value, fill = method)) +
-      geom_bar(stat = "identity", position = "dodge") +
+    p <- ggplot(df_ale, aes(y = gridpoint, x = value)) +
+      geom_bar(stat = "identity", position = "dodge", fill = "darkgray") +
       facet_grid(cols = vars(feature), labeller = function(s) paste0("Feature: ", s)) +
       geom_vline(xintercept = 0) +
       labs(x = "Prediction", y = "Feature value", fill = NULL) +
       theme(legend.position = "top")
   }
-
+  
   ggsave(paste0("figures/Q2/ALE_adult_complete_", feat, ".pdf"), p, width = 8, height = 5)
+  p
 })
+
+# Create plot for paper
+idx <- which(unique(df$feature) %in% c("education_num", "occupation"))
+plots <- tmp[idx]
+p <- plot_grid(plotlist = plots, nrow = 1, labels = c("(a)", "(b)"))
+ggsave("figures/Q2/ALE_adult_complete.pdf", plot = p, width = 12, height = 5)
 
 # Plot for nursery -------------------------------------------------------------
 df <- res_q2[dataset_name == "nursery", ]
 df_rug <- res_q2_rugs[dataset_name == "nursery", ]
 
-# ALE and PDP plots
-tmp <- lapply(unique(df$feature), function(feat) {
-  df_ale <- df[feature == feat & method == "ale", ]
-  df_pdp <- df[feature == feat & method == "pdp" & real == "both", ]
-  df_ale <- rbind(df_ale, df_pdp)
+# PDP/ICE plots
+tmp_pdp <- lapply(unique(df$feature), function(feat) {
+  df_ice <- df[feature == feat & method == "ice", ]
   df_rug_feat <- df_rug[variable == feat, ]
-
-  if (all(df_ale$feat_type == "numeric")) {
-    df_rug_feat$gridpoint <- df_rug_feat$value
-    p <- ggplot(df_ale, aes(x = as.numeric(as.character(gridpoint)))) +
-      geom_rug(data = df_rug_feat, aes(color = real), sides = "b", alpha = 0.5,
-               show.legend = FALSE) +
-      geom_hline(yintercept = 0) +
-      facet_grid(cols = vars(feature), labeller = function(s) paste0("Feature: ", s)) +
-      geom_line(aes(y = value, linetype = method), alpha = 0.5) +
-      labs(x = "Feature value", y = "Prediction", color = NULL, linetype = NULL) +
-      theme(legend.position = "top")
-  } else {
-    df_rug_feat <- df_rug_feat[, .(count = .N / nrow(df_rug_feat)), by = c("real", "value")]
-    p <- ggplot(df_ale, aes(y = gridpoint, x = value, fill = method)) +
-      geom_bar(stat = "identity", position = "dodge") +
-      facet_grid(cols = vars(feature), labeller = function(s) paste0("Feature: ", s)) +
-      geom_vline(xintercept = 0) +
-      labs(x = "Prediction", y = "Feature value", fill = NULL) +
-      theme(legend.position = "top")
-  }
-
-  ggsave(paste0("figures/Q2/ALE_nursery_", feat, ".pdf"), p, width = 8, height = 5)
+  df_rug_feat <- df_rug_feat[, .(count = .N / nrow(df_rug_feat)), by = c("real", "value")]
+  p <- ggplot(df_ice, aes(y = gridpoint, x = value)) +
+    geom_bar(stat = "identity", data = df_rug_feat, aes(y = value, x = count, fill = real), alpha = 0.5, inherit.aes = FALSE) +
+    facet_grid(cols = vars(feature), labeller = function(s) paste0("Feature: ", s)) +
+    geom_boxplot(fill = "darkgray") +
+    stat_summary(geom = "crossbar", fun = "mean", color = "darkred", width = 0.75) +
+    geom_vline(xintercept = 0.5, linetype = "dashed") +
+    labs(x = "Prediction", y = "Feature value", fill = NULL) +
+    theme(legend.position = "top")
+  
+  ggsave(paste0("figures/Q2/ICE_nursery_", feat, ".pdf"), p, width = 8, height = 5)
+  p
 })
 
+# ALE plots
+tmp_ale <- lapply(unique(df$feature), function(feat) {
+  df_ale <- df[feature == feat & method == "ale", ]
+  df_rug_feat <- df_rug[variable == feat, ]
+  df_rug_feat <- df_rug_feat[, .(count = .N / nrow(df_rug_feat)), by = c("real", "value")]
+  p <- ggplot(df_ale, aes(y = gridpoint, x = value)) +
+    geom_bar(stat = "identity", position = "dodge", fill = "darkgray") +
+    facet_grid(cols = vars(feature), labeller = function(s) paste0("Feature: ", s)) +
+    geom_vline(xintercept = 0) +
+    labs(x = "Prediction", y = "Feature value", fill = NULL) +
+    theme(legend.position = "top")
+  
+  ggsave(paste0("figures/Q2/ALE_adult_complete_", feat, ".pdf"), p, width = 8, height = 5)
+  p
+})
+
+
+# Create figure from the paper
+ids <- which(unique(df$feature) %in% c("class", "form"))
+
+p1 <- plot_grid(tmp_pdp[[ids[1]]], 
+                tmp_ale[[ids[1]]] + 
+                  ylab(NULL) + theme(axis.text.y = element_blank()), 
+                nrow = 1, align = "h", rel_widths = c(0.6, 0.4), labels = c("(a)", "(b)"))
+p2 <- plot_grid(tmp_pdp[[ids[2]]], 
+                tmp_ale[[ids[2]]] + 
+                  ylab(NULL) + theme(axis.text.y = element_blank()), 
+                nrow = 1, align = "h", rel_widths = c(0.6, 0.4), labels = c("(c)", "(d)"))
+p <- plot_grid(p1, p2, nrow = 1, align = "h")
+
+ggsave("figures/Q2/ICE_ALE_nursery.pdf", plot = p, width = 12, height = 4)
 ################################################################################
 #                         RESEARCH QUESTION 3 (Q3)
 #
