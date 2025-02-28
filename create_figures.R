@@ -368,7 +368,7 @@ tmp_ale <- lapply(unique(df$feature), function(feat) {
 # Create figure from the paper
 ids <- which(unique(df$feature) %in% c("class", "form"))
 
-p1 <- plot_grid(tmp_pdp[[ids[1]]],
+'p1 <- plot_grid(tmp_pdp[[ids[1]]],
                 tmp_ale[[ids[1]]] +
                   ylab(NULL) + theme(axis.text.y = element_blank()),
                 nrow = 1, align = "h", rel_widths = c(0.6, 0.4), labels = c("(a)", "(b)"))
@@ -377,7 +377,8 @@ p2 <- plot_grid(tmp_pdp[[ids[2]]],
                   ylab(NULL) + theme(axis.text.y = element_blank()),
                 nrow = 1, align = "h", rel_widths = c(0.6, 0.4), labels = c("(c)", "(d)"))
 p <- plot_grid(p1, p2, nrow = 1, align = "h")
-
+'
+p <- plot_grid(plotlist = tmp_pdp[ids], nrow = 1, align = "h", labels = c("(a)", "(b)"))
 ggsave("figures/Q2/ICE_ALE_nursery.pdf", plot = p, width = 12, height = 4)
 
 
