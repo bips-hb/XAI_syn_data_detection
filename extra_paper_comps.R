@@ -25,6 +25,7 @@ data_test <- data[data$train == 0]
 
 data_train <- data[data$train == 1]
 
+
 # Very small correlation between age and education_num overall
 (data_test[,.(.N,cor(age,education_num))])
 (data_test[real=="Real",.(.N,cor(age,education_num))])

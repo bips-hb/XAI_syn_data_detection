@@ -31,7 +31,7 @@ res_perf <- data.table(readRDS("./results/model_performance/model_performance.rd
 # Model Performance Examples ---------------------------------------------------
 df <- res_perf[
   ((dataset == "adult_complete" & syn_name == "TabSyn") |
-     (dataset == "nursery" & syn_name == "CTGAN")) & 
+     (dataset == "nursery" & syn_name == "CTGAN")) &
     model_name == "xgboost" & metric == "Accuracy"]
 df$dataset <- factor(df$dataset, levels = c("adult_complete", "nursery"),
                      labels = c("Adult", "Nursery"))
@@ -41,7 +41,7 @@ p1 <- ggplot(df, aes(x = train, y = value)) +
   geom_boxplot(fill = "darkgray") +
   facet_grid(cols = vars(dataset), scales = "free") +
   labs(x = NULL, fill = "Metric", y = "Accuracy (XGBoost)") +
-  theme(legend.position = "top") + 
+  theme(legend.position = "top") +
   scale_y_continuous(limits = c(0.5, 1), labels = scales::percent) +
   geom_hline(yintercept = 0.5, linetype = "dashed")
 
@@ -53,10 +53,10 @@ p1 <- ggplot(df, aes(x = train, y = value)) +
 # Plot for correct and incorrect predictions
 thres1 <- 0.6
 thres2 <- 0.8
-df <- res_perf[metric == "Accuracy" & run <= 5, 
-               .(correct = sum(value > thres2), 
+df <- res_perf[metric == "Accuracy" & run <= 5,
+               .(correct = sum(value > thres2),
                  middle = sum(value > thres1 & value <= thres2),
-                 incorrect = sum(value <= thres1)), 
+                 incorrect = sum(value <= thres1)),
                by = c("syn_name", "model_name", "train")]
 df <- melt(df, id.vars = c("syn_name", "model_name", "train"))
 
@@ -66,18 +66,18 @@ res_fill <- res_fill[value != max_sum, ]
 res_fill$variable <- "NA"
 res_fill$value <- max_sum - res_fill$value
 df <- rbind(df, res_fill)
-df$syn_name <- factor(df$syn_name, 
+df$syn_name <- factor(df$syn_name,
                       levels = rev(c("TabSyn", "CTGAN", "TVAE", "CTAB-GAN+", "ARF", "synthpop")))
 df$model_name <- factor(df$model_name, levels = c("logReg", "ranger", "xgboost"),
                         labels = c("Logistic Regression", "Random Forest", "XGBoost"))
 
 df$variable <- factor(df$variable, levels = c("correct", "middle", "incorrect", "NA"),
-                      labels = c(paste0("Above ", thres2 * 100, "%"), 
+                      labels = c(paste0("Above ", thres2 * 100, "%"),
                                  paste0("Between ", thres1 * 100, "% and ", thres2 * 100, "%"),
                                  paste0("Below ", thres1 * 100, "%"), "NA"))
 
 # Selection
-p2 <- ggplot(df[train == "test data"], 
+p2 <- ggplot(df[train == "test data"],
              aes(x = value, y = syn_name, fill = variable)) +
   geom_bar(stat = "identity", position = "stack", width = 0.9) +
   geom_text(aes(label = ifelse(value > 10, value, "")), position = position_stack(vjust = 0.5)) +
@@ -433,21 +433,24 @@ indep_dt <- dcast(this_res_condshap[approach=="independence",.(rowid_test,featur
 this_rowid_test= 1353
 
 
-a <- sv_force_shapviz_mod(ctree_dt[rowid_test==this_rowid_test,..features_cols],
+a <- sv_force_shapviz_mod3(ctree_dt[rowid_test==this_rowid_test,..features_cols],
                           b=0.5,
                           features_dt[rowid_test==this_rowid_test,..features_cols],
                           row_id = 1,
                           max_display=5,
                           fill_colors = c("darkgreen","darkred"),
                           bar_label_size = 4,
-                          annotation_size = 4)+
+                          annotation_size = 4,show_annotation = FALSE)+
   labs(y="Conditional") +
   theme(plot.title = element_text(size = 16,face = "bold",hjust=0.5),
         axis.text = element_text(size = 14),
         axis.title = element_text(size = 14),
-        axis.title.y = element_text(size=16, face = "bold"))
+        axis.title.y = element_text(size=16, face = "bold"),
+        axis.line.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank())
 
-b <- sv_force_shapviz_mod(indep_dt[rowid_test==this_rowid_test,..features_cols],
+b <- sv_force_shapviz_mod3(indep_dt[rowid_test==this_rowid_test,..features_cols],
                           b=0.5,
                           features_dt[rowid_test==this_rowid_test,..features_cols],
                           row_id = 1,
@@ -461,11 +464,12 @@ b <- sv_force_shapviz_mod(indep_dt[rowid_test==this_rowid_test,..features_cols],
         axis.title = element_text(size = 14),
         axis.title.y = element_text(size=16, face = "bold"))
 
-pl_cond_vs_marg <- (a/b) + patchwork::plot_annotation(
-  title = paste0("Shapley value feature attributions, syntehtic data, test id = ",this_rowid_test),
-  theme = theme(plot.title = element_text(hjust = 0.5)))
+pl_cond_vs_marg <- (a/b) #+
+  #patchwork::plot_annotation(
+  #title = paste0("Shapley value feature attributions, syntehtic data, test id = ",this_rowid_test),
+  #theme = theme(plot.title = element_text(hjust = 0.5,size = 18)))
 
-pdf(paste0("figures/Q3/Q3_adult_complete_cond_vs_marg_syn_id_",this_rowid_test,".pdf"),width = 10, height = 6)
+pdf(paste0("figures/Q3/Q3_adult_complete_cond_vs_marg_syn_id_",this_rowid_test,".pdf"),width = 10, height = 3.2)
 print(pl_cond_vs_marg)
 dev.off()
 
@@ -504,14 +508,14 @@ this_rowid_test= 16025
 
 
 
-a <- sv_force_shapviz_mod(ctree_dt[rowid_test==this_rowid_test,..features_cols],
+a <- sv_force_shapviz_mod3(ctree_dt[rowid_test==this_rowid_test,..features_cols],
                           b=0.5,
                           features_dt[rowid_test==this_rowid_test,..features_cols],
                           row_id = 1,
                           max_display=5,
                           fill_colors = c("darkgreen","darkred"),
-                          bar_label_size = 4,
-                          annotation_size = 4)+
+                          bar_label_size = 5,
+                          annotation_size = 5)+
   labs(y="Conditional") +
   theme(plot.title = element_text(size = 16,face = "bold",hjust=0.5),
         axis.text = element_text(size = 14),
@@ -519,11 +523,11 @@ a <- sv_force_shapviz_mod(ctree_dt[rowid_test==this_rowid_test,..features_cols],
         axis.title.y = element_text(size=16, face = "bold"))
 
 
-pl_cond_only <- a + patchwork::plot_annotation(
-  title = paste0("Shapley value feature attributions, real data, test id = ",this_rowid_test),
-  theme = theme(plot.title = element_text(hjust = 0.5)))
+pl_cond_only <- a #+ patchwork::plot_annotation(
+#  title = paste0("Shapley value feature attributions, real data, test id = ",this_rowid_test),
+#  theme = theme(plot.title = element_text(hjust = 0.5,size = 18)))
 
-pdf(paste0("figures/Q3/Q3_adult_complete_cond_only_real_id_",this_rowid_test,".pdf"),width = 10, height = 4)
+pdf(paste0("figures/Q3/Q3_adult_complete_cond_only_real_id_",this_rowid_test,".pdf"),width = 10, height = 2.3)
 print(pl_cond_only)
 dev.off()
 
@@ -573,12 +577,13 @@ pl_inter <- plot_waterfall(this_res_intershap,
   theme(plot.title = element_text(size = 16,face = "bold",hjust=0.5),
         axis.text = element_text(size = 14),
         axis.title = element_text(size = 14),
-        axis.title.y = element_text(size=16, face = "bold"))+
-  patchwork::plot_annotation(
-    title = paste0("Shapley interaction values, synthetic data, test id = ",shapviz_row_mapper[rowid_testobs==this_rowid_test,rowid_testobs], " with C(x) = ",round(this_pred,3)),
-    theme = theme(plot.title = element_text(hjust = 0.5)))
+        axis.title.y = element_text(size=16, face = "bold"))#+
+#  patchwork::plot_annotation(
+#    title = paste0("Shapley interaction values, synthetic data, test id = ",shapviz_row_mapper[rowid_testobs==this_rowid_test,rowid_testobs], " with C(x) = ",round(this_pred,3)),
+#    theme = theme(plot.title = element_text(hjust = 0.5,size = 18)))
 
-pdf(paste0("figures/Q3/Q3_adult_complete_inter_syn_id_",this_rowid_test,".pdf"),width = 10, height = 6)
+
+pdf(paste0("figures/Q3/Q3_adult_complete_inter_syn_id_",this_rowid_test,".pdf"),width = 10, height = 3.6)
 print(pl_inter)
 dev.off()
 
@@ -608,14 +613,21 @@ pl_inter <- plot_waterfall(this_res_intershap,
   theme(plot.title = element_text(size = 16,face = "bold",hjust=0.5),
         axis.text = element_text(size = 14),
         axis.title = element_text(size = 14),
-        axis.title.y = element_text(size=16, face = "bold"))+
-  patchwork::plot_annotation(
-    title = paste0("Shapley interaction values, real data, test id = ",shapviz_row_mapper[rowid_testobs==this_rowid_test,rowid_testobs], " with C(x) = ",round(this_pred,3)),
-    theme = theme(plot.title = element_text(hjust = 0.5)))
+        axis.title.y = element_text(size=16, face = "bold"))#+
+#  patchwork::plot_annotation(
+#    title = paste0("Shapley interaction values, real data, test id = ",shapviz_row_mapper[rowid_testobs==this_rowid_test,rowid_testobs], " with C(x) = ",round(this_pred,3)),
+#    theme = theme(plot.title = element_text(hjust = 0.5,size = 18)))
 
-pdf(paste0("figures/Q3/Q3_adult_complete_inter_real_id_",this_rowid_test,".pdf"),width = 10, height = 6)
+pdf(paste0("figures/Q3/Q3_adult_complete_inter_real_id_",this_rowid_test,".pdf"),width = 10, height = 3.6)
 print(pl_inter)
 dev.off()
+
+
+# TODO: Merge the two plots
+
+pl_cond_only/pl_inter
+
+
 
 #### nursery dataset
 
@@ -659,12 +671,12 @@ pl_inter <- plot_waterfall(this_res_intershap,
   theme(plot.title = element_text(size = 16,face = "bold",hjust=0.5),
         axis.text = element_text(size = 14),
         axis.title = element_text(size = 14),
-        axis.title.y = element_text(size=16, face = "bold"))+
-  patchwork::plot_annotation(
-    title = paste0("Shapley interaction values, synthetic data, test id = ",shapviz_row_mapper[rowid_testobs==this_rowid_test,rowid_testobs], " with C(x) = ",round(this_pred,3)),
-    theme = theme(plot.title = element_text(hjust = 0.5)))
+        axis.title.y = element_text(size=16, face = "bold"))#+
+#  patchwork::plot_annotation(
+#    title = paste0("Shapley interaction values, synthetic data, test id = ",shapviz_row_mapper[rowid_testobs==this_rowid_test,rowid_testobs], " with C(x) = ",round(this_pred,3)),
+#    theme = theme(plot.title = element_text(hjust = 0.5)))
 
-pdf(paste0("figures/Q3/Q3_nursery_inter_syn_id_",this_rowid_test,".pdf"),width = 10, height = 4)
+pdf(paste0("figures/Q3/Q3_nursery_inter_syn_id_",this_rowid_test,".pdf"),width = 10, height = 3.4)
 print(pl_inter)
 dev.off()
 
