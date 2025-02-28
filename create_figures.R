@@ -724,11 +724,14 @@ for(i in seq_along(these_cf_ranks)){
 
 }
 
-tab_all <- tab_final
+colnames(tab_final)[1] <- "Original"
+colnames(tab_final)[-1] <- paste0("CF",seq_along(these_cf_ranks))
 
+
+tab_all <- as.data.frame(tab_final)
+
+feature_cols <- unique(this_res_ce_values$variable)
 rownames(tab_all) <- feature_cols
-colnames(tab_all)[1] <- "Original"
-colnames(tab_all)[-1] <- paste0("CF",seq_along(these_cf_ranks))
 #addtorow <- list()
 #addtorow$pos <- list(0)
 #addtorow$command <- paste0("Feature",paste0('& \\multicolumn{3}{c|}{ test id = ',this_rowid , '}', collapse=''), '\\\\')
@@ -797,14 +800,18 @@ for(i in seq_along(these_cf_ranks)){
 
 }
 
-tab_all <- tab_final
+colnames(tab_final)[1] <- "Original"
+colnames(tab_final)[-1] <- paste0("CF",seq_along(these_cf_ranks))
 
+cols <- colnames(tab_final)
+tab_final[, (cols) := lapply(.SD, function(x) gsub("_", "-", x)), .SDcols = cols]
+
+
+tab_all <- as.data.frame(tab_final)
+
+feature_cols <- unique(this_res_ce_values$variable)
 rownames(tab_all) <- feature_cols
-colnames(tab_all)[1] <- "Original"
-colnames(tab_all)[-1] <- paste0("CF",seq_along(these_cf_ranks))
 
-cols <- colnames(tab_all)
-tab_all[, (cols) := lapply(.SD, function(x) gsub("_", "-", x)), .SDcols = cols]
 
 
 #addtorow <- list()
