@@ -36,15 +36,15 @@ NUM_TRAIN <- 10^4 # Number of samples for the calculation
 GENERATE_K = 5*10^5#10^4 # TODO: Increse to at least 10^5
 TO_EXPLAIN = "syn" # Which type of explanatins to explain (one or both of "real", "syn")
 PATH_relevant_test_obs <- "./prepare_local/relevant_test_obs.csv"
-specific_test_obs <- c(1353)
+specific_test_obs <- c(1342)
 NO_CF <- 100
 
 # Define global arguments
 filter_df <- data.table(
-  dataset_name = "adult_complete",
+  dataset_name = "nursery",
   model_name = c("xgboost"),
-  syn_name = c("TabSyn"),
-  run_model = c(2)
+  syn_name = c("CTGAN"),
+  run_model = c(8)
 )
 
 
@@ -240,8 +240,8 @@ res <- lapply(seq_len(nrow(df)), function(i) {
 
   cli_progress_step("Saving results")
   if (!dir.exists(paste0("./results/Q4"))) dir.create(paste0("./results/Q4"), recursive = TRUE)
-  fwrite(out_ce_values, "./results/Q4/ce_values_extra2.csv",append = TRUE)
-  fwrite(out_ce_measures, "./results/Q4/ce_measures_extra2.csv",append = TRUE)
+  fwrite(out_ce_values, "./results/Q4/ce_values_extra3.csv",append = TRUE)
+  fwrite(out_ce_measures, "./results/Q4/ce_measures_extra3.csv",append = TRUE)
 
   NULL # We store things below, so don't return anything
 })

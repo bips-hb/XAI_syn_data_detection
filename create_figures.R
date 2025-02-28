@@ -394,10 +394,6 @@ if (!dir.exists("figures/Q3")) dir.create("figures/Q3",recursive = TRUE)
 
 source("utils.R")
 
-# Consider these types of observations:
-# large differences between ctree and indep. Check if where it differs is seen from pairplots of the data
-#
-
 # adult_complete
 
 # First considering synthetic observations
@@ -608,7 +604,7 @@ this_pred <- 1/(1+exp(-this_pred_logodds))
 pl_inter <- plot_waterfall(this_res_intershap,
                            row_id = shapviz_row_mapper[rowid_testobs==this_rowid_test,shapviz_rowno],
                            fill_colors = c("darkgreen","darkred"),
-                           marg_int_colors = c("orange","purple4"),annotation_size = 4)+
+                           marg_int_colors = c("orange","purple4"),annotation_size = 4.5)+
   #               marg_int_colors = viridisLite::viridis(2))+
   theme(plot.title = element_text(size = 16,face = "bold",hjust=0.5),
         axis.text = element_text(size = 14),
@@ -618,14 +614,13 @@ pl_inter <- plot_waterfall(this_res_intershap,
 #    title = paste0("Shapley interaction values, real data, test id = ",shapviz_row_mapper[rowid_testobs==this_rowid_test,rowid_testobs], " with C(x) = ",round(this_pred,3)),
 #    theme = theme(plot.title = element_text(hjust = 0.5,size = 18)))
 
-pdf(paste0("figures/Q3/Q3_adult_complete_inter_real_id_",this_rowid_test,".pdf"),width = 10, height = 3.6)
-print(pl_inter)
-dev.off()
+##pdf(paste0("figures/Q3/Q3_adult_complete_inter_real_id_",this_rowid_test,".pdf"),width = 10, height = 3.6)
+#print(pl_inter)
+#dev.off()
 
 
-# TODO: Merge the two plots
-
-pl_cond_only/pl_inter
+pppp <- plot_grid(plotlist = list(pl_cond_only+ggtitle(""),pl_inter), ncol = 1, labels = c("(a)", "(b)"),rel_heights = c(1,2.1))
+ggsave(plot=pppp,filename = paste0("figures/Q3/Q3_adult_complete_cond_inter_comb_real_id_",this_rowid_test,".pdf"),width = 10, height = 6.5)
 
 
 
