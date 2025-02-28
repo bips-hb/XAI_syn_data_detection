@@ -502,6 +502,7 @@ indep_dt <- dcast(this_res_condshap[approach=="independence",.(rowid_test,featur
 this_rowid_test= 16025
 
 
+
 a <- sv_force_shapviz_mod(ctree_dt[rowid_test==this_rowid_test,..features_cols],
                           b=0.5,
                           features_dt[rowid_test==this_rowid_test,..features_cols],
@@ -594,6 +595,10 @@ shapviz_row_mapper[,shapviz_rowno := match(rowid_testobs,this_info_intershap$row
 
 this_rowid_test= 16025
 
+this_pred_logodds <- sum(this_res_intershap$S[shapviz_row_mapper[rowid_testobs==this_rowid_test,shapviz_rowno],])+this_res_intershap$baseline
+this_pred <- 1/(1+exp(-this_pred_logodds))
+
+
 pl_inter <- plot_waterfall(this_res_intershap,
                            row_id = shapviz_row_mapper[rowid_testobs==this_rowid_test,shapviz_rowno],
                            fill_colors = c("darkgreen","darkred"),
@@ -604,14 +609,63 @@ pl_inter <- plot_waterfall(this_res_intershap,
         axis.title = element_text(size = 14),
         axis.title.y = element_text(size=16, face = "bold"))+
   patchwork::plot_annotation(
-    title = paste0("Shapley interaction values, real data, test id = ",shapviz_row_mapper[rowid_testobs==this_rowid_test,rowid_testobs]),
+    title = paste0("Shapley interaction values, real data, test id = ",shapviz_row_mapper[rowid_testobs==this_rowid_test,rowid_testobs], " with C(x) = ",round(this_pred,3)),
     theme = theme(plot.title = element_text(hjust = 0.5)))
 
 pdf(paste0("figures/Q3/Q3_adult_complete_inter_real_id_",this_rowid_test,".pdf"),width = 10, height = 6)
 print(pl_inter)
 dev.off()
 
+#### nursery dataset
 
+
+############# intershap for nursery
+
+
+# First considering synthetic observations
+this_intershap_index <- info_dt_intershap[dataset=="nursery" &
+                                            syn == "CTGAN" &
+                                            run_model==8 &
+                                            detect_model == "xgboost", row_id]
+
+this_res_intershap <- res_intershap[[this_intershap_index]]$results
+this_info_intershap <- res_intershap[[this_intershap_index]]$info
+
+# Getting observations to plot
+relevant_test_obs <- fread("./prepare_local/relevant_test_obs.csv")
+
+this_relevant_test_obs <- relevant_test_obs[dataset_name=="nursery" &
+                                              syn_name == "CTGAN" &
+                                              run_model==8 &
+                                              model_name == "xgboost" &
+                                              type == "syn"]
+
+shapviz_row_mapper <- data.table(rowid_testobs = this_relevant_test_obs[,rowid])
+shapviz_row_mapper[,shapviz_rowno := match(rowid_testobs,this_info_intershap$rowid)]
+
+
+this_rowid_test= 1342
+
+this_pred_logodds <- sum(this_res_intershap$S[shapviz_row_mapper[rowid_testobs==this_rowid_test,shapviz_rowno],])+this_res_intershap$baseline
+this_pred <- 1/(1+exp(-this_pred_logodds))
+
+
+pl_inter <- plot_waterfall(this_res_intershap,
+                           row_id = shapviz_row_mapper[rowid_testobs==this_rowid_test,shapviz_rowno],
+                           fill_colors = c("darkgreen","darkred"),
+                           marg_int_colors = c("orange","purple4"),annotation_size = 5)+
+  #               marg_int_colors = viridisLite::viridis(2))+
+  theme(plot.title = element_text(size = 16,face = "bold",hjust=0.5),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 14),
+        axis.title.y = element_text(size=16, face = "bold"))+
+  patchwork::plot_annotation(
+    title = paste0("Shapley interaction values, synthetic data, test id = ",shapviz_row_mapper[rowid_testobs==this_rowid_test,rowid_testobs], " with C(x) = ",round(this_pred,3)),
+    theme = theme(plot.title = element_text(hjust = 0.5)))
+
+pdf(paste0("figures/Q3/Q3_nursery_inter_syn_id_",this_rowid_test,".pdf"),width = 10, height = 4)
+print(pl_inter)
+dev.off()
 
 
 
@@ -621,9 +675,10 @@ dev.off()
 #             TODO: Add description of the research question
 ################################################################################
 
+# Without fixing flnwgt
 
-res_ce_values <- fread("./results/Q4/ce_values_extra.csv")
-res_ce_measures <- fread("./results/Q4/ce_measures_extra.csv")
+res_ce_values <- fread("./results/Q4/ce_values_extra2.csv")
+res_ce_measures <- fread("./results/Q4/ce_measures_extra2.csv")
 
 # adult_complete
 
@@ -638,7 +693,7 @@ features_cols <- unique(this_res_ce_values$variable)
 
 this_rowid <- 1353
 
-these_cf_ranks <- c(1,3,7,8)
+these_cf_ranks <- c(3,17,9,16) # 13
 
 
 tab_list <- list()
@@ -679,16 +734,98 @@ colnames(tab_all)[-1] <- paste0("CF",seq_along(these_cf_ranks))
 
 align_vector <- paste0("|l|r|",paste0(rep("r",length(these_cf_ranks)),collapse=""),"|")
 
-caption0 <- paste0("Four counterfactual explanations for a synthetic with test id ",this_rowid, " in the adult data set.")
+caption0 <- paste0("Four counterfactual explanations for a synthetic sample with test id ",this_rowid, " in the adult data set.",
+                   " Features in red font are changed.")
 
 print(xtable(tab_all,align = align_vector,
-             caption = caption0),
+             caption = caption0, label = paste0("tab:Q4_adult_complete_ce_syn_id_",this_rowid)),
       sanitize.text.function = identity,
       sanitize.rownames.function = NULL,
       include.rownames = TRUE,
       include.colnames = TRUE,
       booktabs = TRUE,
+      size="\\fontsize{8pt}{8pt}\\selectfont",
       #add.to.row=addtorow,
-      file = paste0("tables/Q4/Q4_adult_complete_ce_syn_id_",this_rowid,".tex")
+      file = paste0("tables/Q4/Q4_adult_complete_ce_syn_id_",this_rowid,"_v2.tex")
 )
+
+
+#### nursery
+
+res_ce_values <- fread("./results/Q4/ce_values_extra3.csv")
+res_ce_measures <- fread("./results/Q4/ce_measures_extra3.csv")
+
+this_res_ce_measures <- res_ce_measures
+this_res_ce_values <- res_ce_values
+
+
+
+# Reduce to those with the largest L0 measure
+features_cols <- unique(this_res_ce_values$variable)
+
+this_rowid <- 1342
+
+these_cf_ranks <- this_res_ce_measures[,which(!duplicated(pred))]
+
+these_cf_ranks <- this_res_ce_measures[,which(!duplicated(pred))][c(1,2,3,5)]
+
+tab_list <- list()
+tab_final <- NULL
+for(i in seq_along(these_cf_ranks)){
+
+  this_cf_rank <- these_cf_ranks[i]
+
+
+  tmp <- this_res_ce_values[rowid_test==this_rowid & counterfactual_rank%in%c(this_cf_rank,NA),.(variable,value,row_type)]
+
+  tab <- data.table(org=tmp[row_type=="org"][,value], cf=tmp[row_type=="cf"][,value])
+
+
+  #  tab <- dcast(this_res_ce_values[rowid_test==this_rowid,.(variable,value,row_type)],formula = row_type~variable)
+
+  #tab[org!=cf, `:=`(org=paste0("\\textcolor{red}{",org,"}"),
+  #                 cf=paste0("\\textcolor{red}{",cf,"}"))]
+  tab[org!=cf, `:=`(cf=paste0("\\textcolor{red}{",cf,"}"))]
+
+  if(i==1){
+    tab_final <- cbind(tab_final,tab)
+  } else {
+    tab_final <- cbind(tab_final,tab[,-1])
+  }
+
+
+}
+
+tab_all <- tab_final
+
+rownames(tab_all) <- feature_cols
+colnames(tab_all)[1] <- "Original"
+colnames(tab_all)[-1] <- paste0("CF",seq_along(these_cf_ranks))
+
+cols <- colnames(tab_all)
+tab_all[, (cols) := lapply(.SD, function(x) gsub("_", "-", x)), .SDcols = cols]
+
+
+#addtorow <- list()
+#addtorow$pos <- list(0)
+#addtorow$command <- paste0("Feature",paste0('& \\multicolumn{3}{c|}{ test id = ',this_rowid , '}', collapse=''), '\\\\')
+
+align_vector <- paste0("|l|r|",paste0(rep("r",length(these_cf_ranks)),collapse=""),"|")
+
+caption0 <- paste0("Four counterfactual explanations for a synthetic sample with test id ",this_rowid, " in the nursery data set.",
+                   " Features in red font are changed.")
+
+print(xtable(tab_all,align = align_vector,
+             caption = caption0, label = paste0("tab:Q4_nursery_ce_syn_id_",this_rowid)),
+      sanitize.text.function = identity,
+      sanitize.rownames.function = NULL,
+      include.rownames = TRUE,
+      include.colnames = TRUE,
+      booktabs = TRUE,
+      size="\\fontsize{8pt}{8pt}\\selectfont",
+      #add.to.row=addtorow,
+      file = paste0("tables/Q4/Q4_nursery_ce_syn_id_",this_rowid,".tex")
+)
+
+
 
