@@ -707,6 +707,8 @@ these_cf_ranks <- c(3,17,9,16) # 13
 
 tab_list <- list()
 tab_final <- NULL
+do_color <- FALSE
+
 for(i in seq_along(these_cf_ranks)){
 
   this_cf_rank <- these_cf_ranks[i]
@@ -717,11 +719,9 @@ for(i in seq_along(these_cf_ranks)){
   tab <- data.table(org=tmp[row_type=="org"][,value], cf=tmp[row_type=="cf"][,value])
 
 
-  #  tab <- dcast(this_res_ce_values[rowid_test==this_rowid,.(variable,value,row_type)],formula = row_type~variable)
-
-  #tab[org!=cf, `:=`(org=paste0("\\textcolor{red}{",org,"}"),
-  #                 cf=paste0("\\textcolor{red}{",cf,"}"))]
-  tab[org!=cf, `:=`(cf=paste0("\\textcolor{red}{",cf,"}"))]
+  if(do_color){
+    tab[org!=cf, `:=`(cf=paste0("\\textcolor{red}{",cf,"}"))]
+  }
 
   if(i==1){
     tab_final <- cbind(tab_final,tab)
@@ -783,6 +783,7 @@ these_cf_ranks <- this_res_ce_measures[,which(!duplicated(pred))][c(1,2,3,5)]
 
 tab_list <- list()
 tab_final <- NULL
+do_color <- FALSE
 for(i in seq_along(these_cf_ranks)){
 
   this_cf_rank <- these_cf_ranks[i]
@@ -792,12 +793,9 @@ for(i in seq_along(these_cf_ranks)){
 
   tab <- data.table(org=tmp[row_type=="org"][,value], cf=tmp[row_type=="cf"][,value])
 
-
-  #  tab <- dcast(this_res_ce_values[rowid_test==this_rowid,.(variable,value,row_type)],formula = row_type~variable)
-
-  #tab[org!=cf, `:=`(org=paste0("\\textcolor{red}{",org,"}"),
-  #                 cf=paste0("\\textcolor{red}{",cf,"}"))]
-  tab[org!=cf, `:=`(cf=paste0("\\textcolor{red}{",cf,"}"))]
+  if(do_color){
+    tab[org!=cf, `:=`(cf=paste0("\\textcolor{red}{",cf,"}"))]
+  }
 
   if(i==1){
     tab_final <- cbind(tab_final,tab)
