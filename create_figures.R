@@ -694,32 +694,32 @@ dev.off()
 
 
 make_cf_table <- function(cf_table, dataset_name) {
-  
+
   data <- fread(paste0("data/", dataset_name ,"/real/", dataset_name, ".csv"))
-  
+
   cols <- names(data)
   # replace "-" with "_"
   cols <- gsub("-", "_", cols)
-  
+
   num_cols <- cols[(data[, sapply(data, is.numeric)])]
   cat_cols <- setdiff(cols, num_cols)
-  
+
   cf_tab <- cbind(cols, tab_final)
-  
+
   # Create the flextable
   ft <- flextable(cf_tab)
-  
+
   # Remove the header name for the first column
   ft <- set_header_labels(ft, cols = "")
-  
+
   # Apply image and background color for matching categorical and numeric cells
   for (col in names(cf_tab)[3:6]) {  # Exclude "Original" column
     matching_rows_cat <- intersect(which(cols %in% cat_cols), which(cf_tab[[col]] != cf_tab$Original))
     matching_rows_num_higher <- intersect(which(cols %in% num_cols), which(cf_tab[[col]] > cf_tab$Original))
     matching_rows_num_lower <- intersect(which(cols %in% num_cols), which(cf_tab[[col]] < cf_tab$Original))
-    
+
     for (row in seq_along(cols)) {
-      
+
       if (row %in% matching_rows_cat) {
         bgcol = "lightblue"
         img = "tables/Q4/arrow_lr.png"
@@ -730,35 +730,35 @@ make_cf_table <- function(cf_table, dataset_name) {
         bgcol = "indianred1"
         img = "tables/Q4/arrow_down.png"
       } else next
-      
+
       ft <- compose(
-        ft, 
-        j = col, 
-        i = row, 
+        ft,
+        j = col,
+        i = row,
         value = as_paragraph(
           as_chunk(cf_tab[[col]][row]),  # Keep the original text
-          " ",  
+          " ",
           as_image(src = img, width = .23, height = .15)  # Add image
         )
       )
-      
+
       # Apply background color
       ft <- bg(ft, j = col, i = row, bg = bgcol)
     }
   }
-  
+
   # Apply light gray background to "Original" column
   ft <- bg(ft, j = "Original", bg = "lightgray")
-  
+
   # Make first and last row bold
   ft <- bold(ft, part = "header", bold = TRUE)  # header
   ft <- bold(ft, j = 1, bold = TRUE)  # first col
   # Auto-fit for better appearance
   ft <- autofit(ft)
-  
+
   # Print the flextable
   ft
-  
+
 }
 
 
@@ -818,18 +818,18 @@ rsvg_pdf("figures/Q4/Q4_adult_complete.svg", file = "figures/Q4/Q4_adult_complet
 
 
 # tab_all <- as.data.frame(tab_final)
-# 
+#
 # feature_cols <- unique(this_res_ce_values$variable)
 # rownames(tab_all) <- feature_cols
 # #addtorow <- list()
 # #addtorow$pos <- list(0)
 # #addtorow$command <- paste0("Feature",paste0('& \\multicolumn{3}{c|}{ test id = ',this_rowid , '}', collapse=''), '\\\\')
-# 
+#
 # align_vector <- paste0("|l|r|",paste0(rep("r",length(these_cf_ranks)),collapse=""),"|")
-# 
+#
 # caption0 <- paste0("Four counterfactual explanations for a synthetic sample with test id ",this_rowid, " in the adult data set.",
 #                    " Features in red font are changed.")
-# 
+#
 # print(xtable(tab_all,align = align_vector,
 #              caption = caption0, label = paste0("tab:Q4_adult_complete_ce_syn_id_",this_rowid)),
 #       sanitize.text.function = identity,
@@ -893,7 +893,7 @@ colnames(tab_final)[1] <- "Original"
 colnames(tab_final)[-1] <- paste0("CF",seq_along(these_cf_ranks))
 
 cols <- colnames(tab_final)
-tab_final[, (cols) := lapply(.SD, function(x) gsub("_", "-", x)), .SDcols = cols]
+#tab_final[, (cols) := lapply(.SD, function(x) gsub("_", "-", x)), .SDcols = cols]
 
 
 cf_table <- make_cf_table(tab_final, "nursery")
@@ -901,7 +901,7 @@ save_as_image(x = cf_table, path = "figures/Q4/Q4_nursery.svg")
 rsvg_pdf("figures/Q4/Q4_nursery.svg", file = "figures/Q4/Q4_nursery.pdf")
 
 # tab_all <- as.data.frame(tab_final)
-# 
+#
 # feature_cols <- unique(this_res_ce_values$variable)
 # rownames(tab_all) <- feature_cols
 
@@ -910,12 +910,12 @@ rsvg_pdf("figures/Q4/Q4_nursery.svg", file = "figures/Q4/Q4_nursery.pdf")
 #addtorow <- list()
 #addtorow$pos <- list(0)
 #addtorow$command <- paste0("Feature",paste0('& \\multicolumn{3}{c|}{ test id = ',this_rowid , '}', collapse=''), '\\\\')
-# 
+#
 # align_vector <- paste0("|l|r|",paste0(rep("r",length(these_cf_ranks)),collapse=""),"|")
-# 
+#
 # caption0 <- paste0("Four counterfactual explanations for a synthetic sample with test id ",this_rowid, " in the nursery data set.",
 #                    " Features in red font are changed.")
-# 
+#
 # print(xtable(tab_all,align = align_vector,
 #              caption = caption0, label = paste0("tab:Q4_nursery_ce_syn_id_",this_rowid)),
 #       sanitize.text.function = identity,
