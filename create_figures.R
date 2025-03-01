@@ -8,6 +8,8 @@ library(rlang)
 library(data.table)
 library(xtable)
 library(flextable)
+library(rsvg)
+library(svglite)
 
 # Set theme
 theme_set(theme_minimal(base_size = 15))
@@ -767,7 +769,6 @@ res_ce_measures <- fread("./results/Q4/ce_measures_extra2.csv")
 
 # adult_complete
 
-
 this_res_ce_measures <- res_ce_measures
 this_res_ce_values <- res_ce_values
 
@@ -813,6 +814,7 @@ colnames(tab_final)[-1] <- paste0("CF",seq_along(these_cf_ranks))
 
 cf_table <- make_cf_table(tab_final, "adult_complete")
 save_as_image(x = cf_table, path = "figures/Q4/Q4_adult_complete.svg")
+rsvg_pdf("figures/Q4/Q4_adult_complete.svg", file = "figures/Q4/Q4_adult_complete.pdf")
 
 
 # tab_all <- as.data.frame(tab_final)
@@ -896,6 +898,7 @@ tab_final[, (cols) := lapply(.SD, function(x) gsub("_", "-", x)), .SDcols = cols
 
 cf_table <- make_cf_table(tab_final, "nursery")
 save_as_image(x = cf_table, path = "figures/Q4/Q4_nursery.svg")
+rsvg_pdf("figures/Q4/Q4_nursery.svg", file = "figures/Q4/Q4_nursery.pdf")
 
 # tab_all <- as.data.frame(tab_final)
 # 
