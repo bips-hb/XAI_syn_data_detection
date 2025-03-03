@@ -133,5 +133,5 @@ res <- lapply(seq_len(nrow(df)), function(i) {
 })
 
 
-if (!dir.exists(paste0("./prepare_local"))) dir.create(paste0("./prepare_local"), recursive = TRUE)
-fwrite(rbindlist(res), paste0("./prepare_local/relevant_test_obs.csv"))
+if (!dir.exists(paste0("./results/prepare_local"))) dir.create(paste0("./results/prepare_local"), recursive = TRUE)
+fwrite(rbindlist(res), paste0("./results/prepare_local/relevant_test_obs.csv"))

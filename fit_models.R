@@ -30,7 +30,7 @@ filter_df <- data.table(expand.grid(
     'diabetes', 'diabetes_HI', 'diamonds', 'letter_recognition', 
     'magic_gamma_telescope', 'nursery', 'statlog_landsat_satellite'
   ), 
-  model_name = "xgboost",#  c("ranger", "logReg", "xgboost"), 
+  model_name = c("ranger", "logReg", "xgboost"), 
   syn_name = c(
     "ARF", "CTAB-GAN+", "CTGAN", "synthpop", "TabSyn", "TVAE"
   )
@@ -158,24 +158,3 @@ cli_progress_step("Saving results")
 saveRDS(result, file = "./results/model_performance/model_performance.rds")
 cli_progress_done()
 
-
-################################################################################
-#                             Plot results
-################################################################################
-dat_levels <- unique(result$train)
-cols <- RColorBrewer::brewer.pal(n = length(dat_levels), name = "Dark2")
-plots <- lapply(unique(result$metric), function(met) {
-  ggplot(result[result$metric == met, ], aes(x = syn_name, y = value, color = train)) +
-    geom_boxplot() +
-    facet_grid(rows = vars(model_name), cols = vars(dataset), scales = "fixed") +
-    scale_color_manual(values = cols[which(dat_levels %in% unique(result[result$metric == met, ]$train))]) +
-    geom_hline(yintercept = 0.5, color = "black", linetype = "dashed") +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 90, hjust = 1),
-          legend.position = "top") +
-    labs(title = paste0("Detection model performance (", met, ")"), x = "Syntheziser",
-         y = "Metric value", color = "")
-  
-  ggsave(paste0("./results/model_performance/plot_", met, ".pdf"), 
-         plot = last_plot(), width = 16, height = 5)
-})
