@@ -1,7 +1,19 @@
 ################################################################################
 #                         Utility functions
+#
+# This file contains heler functions for:
+#       - Fitting Detection Models
+#       - Data Preprocessing
+#       - Get prediction functions
+#       - Shapley/Shapvis helpers
+#       - Plotting functions
+#       - For CF tables
 ################################################################################
 
+
+#-------------------------------------------------------------------------------
+#                       Fitting Detection Models
+#-------------------------------------------------------------------------------
 
 # Fit detection model
 # `data` is a list of data frames, each containing a real and synthetic dataset
@@ -252,6 +264,10 @@ tune_xgboost <- function(x, y, bounds,
   list(params = params, nrounds = xgbcv$best_iteration)
 }
 
+#-------------------------------------------------------------------------------
+#                           Data Preprocessing
+#-------------------------------------------------------------------------------
+
 # Load and combine real and synthetic data
 load_data <- function(dataset_name, syn_name, test_split = 0.3) {
   path_real <- paste0("./data/", dataset_name, "/real/", dataset_name, ".csv")
@@ -356,6 +372,10 @@ encode_cat_vars <- function(df, exclude = c("real", "train")) {
   }
 }
 
+#-------------------------------------------------------------------------------
+#                         Get prediction functions
+#-------------------------------------------------------------------------------
+
 get_predict_fun <- function(model_name) {
   # Select predict function
   if (model_name == "xgboost") {
@@ -379,7 +399,6 @@ get_predict_fun <- function(model_name) {
 }
 
 
-# TODO: Do we need this?? # MJ: Yes for workaround with paralallization with shapr
 get_predict_fun_shapr <- function(model_name){
   # Ranger model -------------------------------------------------------------
   if (model_name == "ranger") {
@@ -450,7 +469,91 @@ get_predict_fun_shapr <- function(model_name){
 
 }
 
+#-------------------------------------------------------------------------------
+#                         Shapley/Shapvis helpers
+#-------------------------------------------------------------------------------
 
+# Calculate variable importance including interactions
+sv_vi <- function(object, abs = TRUE, idx = NULL) {
+  ints <- object$S_inter
+  
+  if (!is.null(idx)) {
+    ints <- ints[idx,,]
+  }
+  
+  dimnames(ints)[[1]] <- 1:(dim(ints)[1])
+  
+  # Remove lower part of matrix
+  for (i in 1:dim(ints)[1]) {
+    ints[i,,][lower.tri(ints[i,,])] <- NA
+  }
+  
+  dt <- as.data.table(ints)
+  dt[, id := as.numeric(V1)]
+  dt[, var := paste(V2, V3, sep = " - ")]
+  dt[V2 == V3, var := V2]
+  dt[, degree := 2]
+  dt[V2 == V3, degree := 1]
+  
+  # Interactions x2 because of removed lower parts
+  dt[degree == 2, value := 2*value]
+  
+  if (abs) {
+    aggr <- dt[, list(value = mean(abs(value))), by = .(var, degree)]
+  } else {
+    aggr <- dt[, list(value = mean((value))), by = .(var, degree)]
+  }
+  
+  aggr
+}
+
+
+# Necessary for waterfall plot (see below)
+.make_dat <- function(object, format_feat, sep = " = ") {
+  ints <- object$S_inter
+  dimnames(ints)[[1]] <- 1:(dim(ints)[1])
+  
+  # Remove lower part of matrix
+  for (i in 1:dim(ints)[1]) {
+    ints[i,,][lower.tri(ints[i,,])] <- NA
+  }
+  
+  dt <- as.data.table(ints)
+  dt[, id := as.numeric(V1)]
+  dt[, var := paste(V2, V3, sep = " - ")]
+  dt[V2 == V3, var := V2]
+  dt[, degree := 2]
+  dt[V2 == V3, degree := 1]
+  
+  labels <- data.table(feat = colnames(object$X),
+                       label = paste(colnames(object$X), format_feat(object$X), sep = sep))
+  dt <- merge(merge(dt, labels, by.x = "V2", by.y = "feat", all.x = TRUE),
+              labels, by.x = "V3", by.y = "feat", all.x = TRUE)
+  dt[label.x == label.y, label.y := ""]
+  dt[label.y != "", label.y := paste0(", ", label.y)]
+  dt[, label := paste0(label.x, label.y)]
+  #dt[, S := format_feat(value)]
+  dt[, S := value]
+  
+  dt[, .(S, label)]
+}
+
+get_top_df <- function(df_intershap, top = 20) {
+  df_interact_shap <- rbindlist(lapply(df_intershap, sv_vi))
+  df_interact_mean <- df_interact_shap[, .(value = median(value)), by = c("var", "degree")]
+  vi_top <- df_interact_mean[order(-abs(value))][1:top]
+  df <- df_interact_shap[var %in% vi_top$var]
+  df[, degree := factor(degree)]
+  df[, var := factor(var, levels = rev(vi_top$var))]
+  df$type <- "global TreeSHAP (interactions)"
+
+  df
+}
+
+
+#-------------------------------------------------------------------------------
+#                             Plotting functions
+#-------------------------------------------------------------------------------
 
 sv_force_shapviz_mod <- function(shap_dt,b,feature_vals_dt, row_id = 1L, max_display = 6L,
                                  fill_colors = c("#f7d13d", "#a52c60"),
@@ -899,33 +1002,76 @@ plot_waterfall <- function(object, row_id = 1L, max_display = 10L,
   p+theme(axis.text.y = element_text(color = ifelse(marg_or_int=="int", marg_int_colors[2], marg_int_colors[1])))
 }
 
-# Necessary for waterfall plot (see below)
-.make_dat <- function(object, format_feat, sep = " = ") {
-  ints <- object$S_inter
-  dimnames(ints)[[1]] <- 1:(dim(ints)[1])
 
-  # Remove lower part of matrix
-  for (i in 1:dim(ints)[1]) {
-    ints[i,,][lower.tri(ints[i,,])] <- NA
+#-------------------------------------------------------------------------------
+#                           Creating CF Tables
+#-------------------------------------------------------------------------------
+
+
+make_cf_table <- function(cf_table, dataset_name) {
+  
+  data <- fread(paste0("data/", dataset_name ,"/real/", dataset_name, ".csv"))
+  
+  cols <- names(data)
+  # replace "-" with "_"
+  cols <- gsub("-", "_", cols)
+  
+  num_cols <- cols[(data[, sapply(data, is.numeric)])]
+  cat_cols <- setdiff(cols, num_cols)
+  
+  cf_tab <- cbind(cols, tab_final)
+  
+  # Create the flextable
+  ft <- flextable(cf_tab)
+  
+  # Remove the header name for the first column
+  ft <- set_header_labels(ft, cols = "")
+  
+  # Apply image and background color for matching categorical and numeric cells
+  for (col in names(cf_tab)[3:6]) {  # Exclude "Original" column
+    matching_rows_cat <- intersect(which(cols %in% cat_cols), which(cf_tab[[col]] != cf_tab$Original))
+    matching_rows_num_higher <- intersect(which(cols %in% num_cols), which(cf_tab[[col]] > cf_tab$Original))
+    matching_rows_num_lower <- intersect(which(cols %in% num_cols), which(cf_tab[[col]] < cf_tab$Original))
+    
+    for (row in seq_along(cols)) {
+      
+      if (row %in% matching_rows_cat) {
+        bgcol = "lightblue"
+        img = "tables/Q4/arrow_lr.png"
+      } else if (row %in% matching_rows_num_higher) {
+        bgcol = "lightgreen"
+        img = "tables/Q4/arrow_up.png"
+      } else if (row %in% matching_rows_num_lower) {
+        bgcol = "indianred1"
+        img = "tables/Q4/arrow_down.png"
+      } else next
+      
+      ft <- compose(
+        ft,
+        j = col,
+        i = row,
+        value = as_paragraph(
+          as_chunk(cf_tab[[col]][row]),  # Keep the original text
+          " ",
+          as_image(src = img, width = .23, height = .15)  # Add image
+        )
+      )
+      
+      # Apply background color
+      ft <- bg(ft, j = col, i = row, bg = bgcol)
+    }
   }
-
-  dt <- as.data.table(ints)
-  dt[, id := as.numeric(V1)]
-  dt[, var := paste(V2, V3, sep = " - ")]
-  dt[V2 == V3, var := V2]
-  dt[, degree := 2]
-  dt[V2 == V3, degree := 1]
-
-  labels <- data.table(feat = colnames(object$X),
-                       label = paste(colnames(object$X), format_feat(object$X), sep = sep))
-  dt <- merge(merge(dt, labels, by.x = "V2", by.y = "feat", all.x = TRUE),
-              labels, by.x = "V3", by.y = "feat", all.x = TRUE)
-  dt[label.x == label.y, label.y := ""]
-  dt[label.y != "", label.y := paste0(", ", label.y)]
-  dt[, label := paste0(label.x, label.y)]
-  #dt[, S := format_feat(value)]
-  dt[, S := value]
-
-  dt[, .(S, label)]
+  
+  # Apply light gray background to "Original" column
+  ft <- bg(ft, j = "Original", bg = "lightgray")
+  
+  # Make first and last row bold
+  ft <- bold(ft, part = "header", bold = TRUE)  # header
+  ft <- bold(ft, j = 1, bold = TRUE)  # first col
+  # Auto-fit for better appearance
+  ft <- autofit(ft)
+  
+  # Print the flextable
+  ft
+  
 }
-
