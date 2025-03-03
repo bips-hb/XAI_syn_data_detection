@@ -93,13 +93,58 @@ The figures in the paper can be reproduced by running the following script:
 
 ## 📚 Requirements
 
-**Required R packages:**
+### Required R packages
+
+**For synthesizers:**
+
+- `arf`
+- `synthpop`
+
+**For detection models:**
 
 - `ranger`
 - `xgboost`
-- ...
+- `ParBayesianOptimization`
+- `Metrics`
+
+**For IML:**
+
+- `iml`
+- `mcceR` (installed with `remotes::install_github("NorskRegnesentral/mcceR")`)
+- `shapr`
+
+**For visualization:**
+
+- `ggplot2`
+- `cowplot`
+- `patchwork`
+- `flextable`
+- `shapviz`
+- `xtable`
+- `rsvg`
+- `svglite`
+- `gggenes`
+- `ggrepel`
+- `ggfittext`
 
 
-**Required Python packages:**
+**For Parallel processing:**
 
-- ...
+- `doParallel`
+- `parallelly`
+- `parallel`
+- `foreach`
+
+**For Data processing and console output:**
+
+- `data.table`
+- `rlang`
+- `cli`
+
+
+### Required Python packages
+
+- `json`
+- `tabsyn`
+- `CTABGANPlus`
+- `sdv`
