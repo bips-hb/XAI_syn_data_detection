@@ -1,7 +1,7 @@
 ################################################################################
-#                   Feature Effect plots (PDP + ICE, ALE)
+#                   Feature Effect plots (PDP + ICE)
 #
-#     This script runs PDP + ICE and ALE on the 
+#     This script runs PDP + ICE on the 
 #     given model, dataset and synthesizer. It saves the results in the
 #    `results` folder.
 ################################################################################
@@ -22,13 +22,13 @@ cli_div(theme = list(span.emph = list(color = "#3c77b9")))
 set.seed(42)
 
 # Manage number of cores and RAM
-n_threads <- 250L
+n_threads <- 200L
 
 options(future.globals.maxSize = 25000 * 1024^2)
 Sys.setenv(R_RANGER_NUM_THREADS = n_threads)
 Sys.setenv(OMP_THREAD_LIMIT = n_threads)
 
-# Global arguments for the PFI method
+# Global arguments for the PDP and ICE method
 NUM_SAMPLES <- 10000
 NUM_SAMPLES_ICE <- 200
 NUM_GRID_POINTS <- 250
@@ -47,11 +47,11 @@ filter_df <- data.table(
 source("utils.R")
 
 ################################################################################
-#                Main script for running PDP + ICE and ALE
+#                Main script for running PDP + ICE
 ################################################################################
 
 # Create data.frame for all settings -------------------------------------------
-cli_progress_step("Creating settings data.frame for running PDP, ICE and ALE")
+cli_progress_step("Creating settings data.frame for running PDP and ICE")
 
 # Find all available datasets and trained model
 model_names <- list.files("./models/")
@@ -72,8 +72,8 @@ df <- rbindlist(lapply(model_names, function(model_name) {
 # Filter settings (as defined in the global settings)
 df <- df[filter_df, on = c("dataset_name", "model_name", "syn_name", "run_model")]
 
-# Running Feature Effect plots (PDP + ICE, ALE) --------------------------------
-cli_h1("Running Feature Effect plots (PDP + ICE, ALE)")
+# Running Feature Effect plots (PDP + ICE) -------------------------------------
+cli_h1("Running Feature Effect plots (PDP + ICE)")
 
 res <- lapply(seq_len(nrow(df)), function(i) {
   
@@ -147,22 +147,9 @@ res <- lapply(seq_len(nrow(df)), function(i) {
   res_pdp$`.id` <- NA
   res_pdp$`.type` <- "pdp"
   
-  
-  # ALE ------------------------------------------------------------------------
-  feat_effect <- FeatureEffects$new(predictor, method = "ale",
-                                    features = names(df_test)[1:(ncol(df_test) - 1)],
-                                    grid.size = NUM_GRID_POINTS)
-  results <- lapply(feat_effect$results, function(x) {
-    x$feat_type <- if (is.numeric(x$.borders)) "numeric" else "categorical"
-    x
-  })
-  res_ale <- rbindlist(results)
-  res_ale$`.id` <- NA
-  res_ale$real <- NA
-  
   # ----------------------------------------------------------------------------
   # Summarize results
-  res <- rbind(res_ice, res_ale, res_pdp)
+  res <- rbind(res_ice, res_pdp)
   setnames(res, c(".borders", ".value", ".type", ".id", ".feature"),
            c("gridpoint", "value", "method", "id", "feature"))
   

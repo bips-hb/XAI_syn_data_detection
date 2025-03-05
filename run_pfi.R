@@ -20,14 +20,11 @@ cli_div(theme = list(span.emph = list(color = "#3c77b9")))
 set.seed(42)
 
 # Manage number of cores and RAM
-# Note: The total number of cores used will be 'mc.cores * n_threads'
-n_threads <- 10L
-mc.cores <-10L
+n_threads <- 200L
 
 options(future.globals.maxSize = 25000 * 1024^2)
 Sys.setenv(R_RANGER_NUM_THREADS = n_threads)
 Sys.setenv(OMP_THREAD_LIMIT = n_threads)
-options(mc.cores = mc.cores)
 
 # Global arguments for the PFI method
 NUM_SAMPLES <- Inf # Number of samples for the calculation
@@ -76,7 +73,7 @@ df <- df[filter_df, on = c("dataset_name", "model_name", "syn_name", "run_model"
 # Running PFI ------------------------------------------------------------------
 cli_h1("Running Permutation Feature Importance (PFI)")
 
-res <- mclapply(seq_len(nrow(df)), function(i) {
+res <- lapply(seq_len(nrow(df)), function(i) {
   
   # Set seed
   set.seed(42)

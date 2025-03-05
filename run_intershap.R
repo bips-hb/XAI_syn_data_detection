@@ -12,7 +12,6 @@ library(cowplot)
 #library(Metrics)
 library(data.table)
 library(doParallel)
-library(arf)
 library(parallel)
 library(ggplot2)
 library(shapviz)
@@ -22,28 +21,17 @@ cli_div(theme = list(span.emph = list(color = "#3c77b9")))
 set.seed(42)
 
 # Manage number of cores and RAM
-# Note: The total number of cores used will be 'mc.cores * n_threads'
 n_threads <- 200L
-mc.cores <-1L
 
 options(future.globals.maxSize = 25000 * 1024^2)
 Sys.setenv(R_RANGER_NUM_THREADS = n_threads)
 Sys.setenv(OMP_THREAD_LIMIT = n_threads)
-options(mc.cores = mc.cores)
 
 # Global arguments for the interSHAP method
 train_or_test <- 0 # 0 for test, 1 for train data
 NUM_SAMPLES <- Inf # Number of samples for the calculation
 
 # Define global arguments
-filter_df <- data.table(
-  dataset_name = rev(c("adult_complete", "nursery")),
-  model_name = c("xgboost"),
-  syn_name = rev(c("TabSyn", "CTGAN")),
-  run_model = rep(1:10,each=2)
-)
-
-# What we actually use
 filter_df <- data.table(
   dataset_name = rev(c("adult_complete", "nursery")),
   model_name = c("xgboost"),

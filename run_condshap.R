@@ -24,13 +24,11 @@ set.seed(42)
 
 # Manage number of cores and RAM
 # Note: The total number of cores used will be 'mc.cores * n_threads'
-n_threads <- 100L
-mc.cores <-10L
+n_threads <- 20L
 
 options(future.globals.maxSize = 25000 * 1024^2)
 Sys.setenv(R_RANGER_NUM_THREADS = n_threads)
 Sys.setenv(OMP_THREAD_LIMIT = n_threads)
-options(mc.cores = mc.cores)
 
 # Global arguments for the condSHAP method
 SHAPR_PARALLEL <- TRUE # Run v(S) computations in parallel within shapr?
@@ -58,7 +56,7 @@ NUM_TRAIN <- 500 # Number of observations to use to train the feature distributi
 NUM_COAL_SAMPLES <- 100 # Maximum number of coalitions considered
 NUM_MC_SAMPLES <- 5*10^2 # Number of Monte Carlo samples in the numerical integration for computing the v(S)
 APPROACH <- "independence" # "ctree" or "independence"
-PATH_relevant_test_obs <- "./prepare_local/relevant_test_obs.csv"
+PATH_relevant_test_obs <- "./results/prepare_local/relevant_test_obs.csv"
 
 filter_df <- data.table(
   dataset_name = rev(c("adult_complete", "nursery")),
@@ -115,7 +113,7 @@ if(file.exists(PATH_relevant_test_obs)){
   stop("The file with relevant test observations does not exist. Please run the prepare_local script first.")
 }
 
-dt_test_obs <- fread("./prepare_local/relevant_test_obs.csv")
+dt_test_obs <- fread("./results/prepare_local/relevant_test_obs.csv")
 dt_test_obs <- dt_test_obs[filter_df, on = c("dataset_name", "model_name", "syn_name", "run_model")]
 
 

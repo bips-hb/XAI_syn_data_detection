@@ -22,20 +22,17 @@ cli_div(theme = list(span.emph = list(color = "#3c77b9")))
 set.seed(42)
 
 # Manage number of cores and RAM
-# Note: The total number of cores used will be 'mc.cores * n_threads'
 n_threads <- 100L
-mc.cores <-10L
 
 options(future.globals.maxSize = 25000 * 1024^2)
 Sys.setenv(R_RANGER_NUM_THREADS = n_threads)
 Sys.setenv(OMP_THREAD_LIMIT = n_threads)
-options(mc.cores = mc.cores)
 
 # Global arguments for the CE method
 NUM_TRAIN <- 10^4 # Number of samples for the calculation
 GENERATE_K = 5*10^5#10^4 # TODO: Increse to at least 10^5
 TO_EXPLAIN = c("real","syn") # Which type of explanatins to explain (one or both of "real", "syn")
-PATH_relevant_test_obs <- "./prepare_local/relevant_test_obs.csv"
+PATH_relevant_test_obs <- "./resuts/prepare_local/relevant_test_obs.csv"
 
 # Define global arguments
 filter_df <- data.table(
