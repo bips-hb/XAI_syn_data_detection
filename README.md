@@ -97,7 +97,7 @@ The figures in the paper can be reproduced by running the following script:
 
 ## 📚 Requirements
 
-### Required R ![R](https://www.r-project.org/Rlogo.png){ height=30px } packages
+### Required R <img src="https://www.r-project.org/Rlogo.png" alt="R logo" style="height: 1em; vertical-align: middle;"> packages
 
 **For synthesizers:**
 
@@ -146,7 +146,7 @@ The figures in the paper can be reproduced by running the following script:
 - `cli`
 
 
-### Required Python ![Python](https://s3.dualstack.us-east-2.amazonaws.com/pythondotorg-assets/media/community/logos/python-logo-only.png){ height=30px } packages
+### Required Python <img src="https://s3.dualstack.us-east-2.amazonaws.com/pythondotorg-assets/media/community/logos/python-logo-only.png" alt="Python logo" style="height: 1em; vertical-align: middle;"> packages
 
 - `json`
 - `tabsyn`
