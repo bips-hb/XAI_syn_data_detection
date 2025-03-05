@@ -1,8 +1,8 @@
 # What’s Wrong with Your Synthetic Tabular Data?
 
 This repository contains the code and material to reproduce the results of the 
-manuscript "What’s Wrong with Your Synthetic Tabular Data? Using Explainable AI 
-to Evaluate Generative Models". The paper is currently under review.
+manuscript *"What’s Wrong with Your Synthetic Tabular Data? Using Explainable AI 
+to Evaluate Generative Models"*. The paper is currently under review.
 
 ## 🗂️ Datasets
 
@@ -27,6 +27,10 @@ to Evaluate Generative Models". The paper is currently under review.
 - `magic_gamma_telescope`
 - `statlog_landsat_satellite`
 
+An overview of the datasets can be found in the `data/datasets_overview.csv` 
+file. Additionally, we provide correlation and histrogram plots of the the real 
+and synthetic dataset distribution in the corresponding subfolders 
+`data/[DATASET_NAME]/histograms/` and `data/[DATASET_NAME]/correlations/`.
 
 ## 🛠️ Data Synthesis/Generation
 
@@ -69,7 +73,7 @@ models. The results are saved in the folder `results/` and visualized by
 running the script `create_figures.R`. 
 See details in the corresponding scripts:
 
-- `run_PFI.R`: Permutation Feature Importance (PFI) method (**used for Q1**).
+- `run_pfi.R`: Permutation Feature Importance (PFI) method (**used for Q1**).
 
 - `run_feat_effects.R`: Partial Dependence Plots (PDP) and Individual Conditional
   Expectation (ICE) plots (**used for Q2**).
@@ -93,7 +97,7 @@ The figures in the paper can be reproduced by running the following script:
 
 ## 📚 Requirements
 
-### Required R packages
+### Required R ![R](https://www.r-project.org/Rlogo.png){ height=30px } packages
 
 **For synthesizers:**
 
@@ -142,7 +146,7 @@ The figures in the paper can be reproduced by running the following script:
 - `cli`
 
 
-### Required Python packages
+### Required Python ![Python](https://s3.dualstack.us-east-2.amazonaws.com/pythondotorg-assets/media/community/logos/python-logo-only.png){ height=30px } packages
 
 - `json`
 - `tabsyn`
