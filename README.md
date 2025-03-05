@@ -15,17 +15,91 @@ to Evaluate Generative Models"*. The paper is currently under review.
   
 **Used datasets:**
 
-- `adult_complete`
-- `nursery`
-- `car_evaluation`
-- `chess_king_rook_vs_king`
-- `connect_4`
-- `diabetes`
-- `diabetes_HI`
-- `diamonds`
-- `letter_recognition`
-- `magic_gamma_telescope`
-- `statlog_landsat_satellite`
+('N' = Number of instances, 'p' = Number of features, 'Cat' = number of categorical features, 'Cont' = number of numerical features)
+
+<details closed>
+<summary>`adult_complete` [UCI ID: 2](https://archive.ics.uci.edu/dataset/2/adult) [N = 47876, p = 14, Cat = 8, Cont = 6]{style="float:right"}</summary>
+<blockquote>
+Predict whether annual income of an individual exceeds $50K/yr based on census data. 
+Also known as "Census Income" dataset.
+
+**Note:** In comparison with the original dataset, we renamed some variables 
+and classes, dropped the variable `education`
+because of redundancy with `education_num`, and reduced the number of classes in
+the variable `native-country` to the top 30 most frequent countries.
+</blockquote>
+</details>
+<details closed>
+<summary>`nursery` [UCI ID: 76](https://archive.ics.uci.edu/dataset/76/nursery) [N = 12958, p = 9, Cat = 9, Cont = 0]{style="float:right"}</summary>
+<blockquote>
+Nursery Database was derived from a hierarchical decision model originally 
+developed to rank applications for nursery schools.
+
+**Note:** We removed all instances with the class `recommend` in the variable 
+`class`.
+</blockquote>
+</details>
+<details closed>
+<summary>`car_evaluation` [UCI ID: 19](https://archive.ics.uci.edu/dataset/19/car+evaluation) [N =   1728, p =  7, Cat =  7, Cont =  0]{style="float:right"}</summary>
+<blockquote>
+Derived from simple hierarchical decision model, this database may be useful for 
+testing constructive induction and structure discovery methods.
+</blockquote>
+</details>
+<details closed>
+<summary>`chess_king_rook_vs_king` [UCI ID: 23](https://archive.ics.uci.edu/dataset/23/chess+king+rook+vs+king) [N = 28056, p = 7, Cat = 4, Cont = 3]{style="float:right"}</summary>
+<blockquote>
+Chess Endgame Database for White King and Rook against Black King (KRK).
+</blockquote>
+</details>
+<details closed>
+<summary>`connect_4` [UCI ID: 26](https://archive.ics.uci.edu/dataset/26/connect+4) [N = 67557, p = 43, Cat = 43, Cont = 0]{style="float:right"}</summary>
+<blockquote>
+This database contains all legal 8-ply positions in the game of connect-4 in 
+which neither player has won yet, and in which the next move is not forced.
+</blockquote>
+</details>
+<details closed>
+<summary>`letter_recognition` [UCI ID: 59](https://archive.ics.uci.edu/dataset/59/letter+recognition) [N = 20000, p = 17, Cat = 1, Cont = 16]{style="float:right"}</summary>
+<blockquote>
+Database of character image features; try to identify the letter
+</blockquote>
+</details>
+<details closed>
+<summary>`magic_gamma_telescope` [UCI ID: 159](https://archive.ics.uci.edu/dataset/159/magic+gamma+telescope) [N = 19020, p = 11, Cat = 1, Cont = 10]{style="float:right"}</summary>
+<blockquote>
+Data are MC generated to simulate registration of high energy gamma particles in an atmospheric Cherenkov telescope
+</blockquote>
+</details>
+<details closed>
+<summary>`statlog_landsat_satellite` [UCI ID: 146](https://archive.ics.uci.edu/dataset/146/statlog+landsat+satellite) [N = 6435, p = 37, Cat = 0, Cont = 37]{style="float:right"}</summary>
+<blockquote>
+Multi-spectral values of pixels in 3x3 neighbourhoods in a satellite image, and the classification associated with the central pixel in each neighbourhood
+</blockquote>
+</details>
+<details closed>
+<summary>`diabetes` [Kaggle: mathchi/diabetes-data-set](https://www.kaggle.com/datasets/mathchi/diabetes-data-set) [N = 768, p = 9, Cat = 0, Cont = 9]{style="float:right"}</summary>
+<blockquote>
+This dataset is originally from the National Institute of Diabetes and Digestive 
+and Kidney Diseases. The objective is to predict based on diagnostic measurements whether a patient has diabetes.
+</blockquote>
+</details>
+<details closed>
+<summary>`diabetes_HI` [Kaggle: alexteboul/diabetes-health-indicators-dataset](https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset) [N = 253680, p = 22, Cat = 0, Cont = 22]{style="float:right"}</summary>
+<blockquote>
+Diabetes is among the most prevalent chronic diseases in the United States, impacting millions of Americans each year and exerting a significant financial burden on the economy. Diabetes is a serious chronic disease in which individuals lose the ability to effectively regulate levels of glucose in the blood, and can lead to reduced quality of life and life expectancy. After different foods are broken down into sugars during digestion, the sugars are then released into the bloodstream. This signals the pancreas to release insulin. Insulin helps enable cells within the body to use those sugars in the bloodstream for energy. Diabetes is generally characterized by either the body not making enough insulin or being unable to use the insulin that is made as effectively as needed. Complications like heart disease, vision loss, lower-limb amputation, and kidney disease are associated with chronically high levels of sugar remaining in the bloodstream for those with diabetes. While there is no cure for diabetes, strategies like losing weight, eating healthily, being active, and receiving medical treatments can mitigate the harms of this disease in many patients. Early diagnosis can lead to lifestyle changes and more effective treatment, making predictive models for diabetes risk important tools for public and public health officials. The scale of this problem is also important to recognize. The Centers for Disease Control and Prevention has indicated that as of 2018, 34.2 million Americans have diabetes and 88 million have prediabetes. Furthermore, the CDC estimates that 1 in 5 diabetics, and roughly 8 in 10 prediabetics are unaware of their risk. While there are different types of diabetes, type II diabetes is the most common form and its prevalence varies by age, education, income, location, race, and other social determinants of health. Much of the burden of the disease falls on those of lower socioeconomic status as well. Diabetes also places a massive burden on the economy, with diagnosed diabetes costs of roughly \$327 billion dollars and total costs with undiagnosed diabetes and prediabetes approaching \$400 billion dollars annually.
+</blockquote>
+</details>
+<details closed>
+<summary>`diamonds` [Kaggle: shivam2503/diamonds](https://www.kaggle.com/datasets/shivam2503/diamonds)  [N = 53940, p = 10, Cat = 3, Cont = 7]{style="float:right"}</summary>
+<blockquote>
+This classic dataset contains the prices and other attributes of almost 54,000 
+diamonds. It's a great dataset for beginners learning to work with data analysis 
+and visualization.
+</blockquote>
+</details>
+</br>
+
 
 An overview of the datasets can be found in the `data/datasets_overview.csv` 
 file. Additionally, we provide correlation and histrogram plots of the the real 
@@ -144,7 +218,6 @@ The figures in the paper can be reproduced by running the following script:
 - `data.table`
 - `rlang`
 - `cli`
-
 
 ### Required Python <img src="https://s3.dualstack.us-east-2.amazonaws.com/pythondotorg-assets/media/community/logos/python-logo-only.png" alt="Python logo" style="height: 1em; vertical-align: middle;"> packages for synthesizers
 
