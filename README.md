@@ -17,23 +17,23 @@ to Evaluate Generative Models"*. The paper is currently under review.
 
 ('N' = Number of instances, 'p' = Number of features, 'Cat' = number of categorical features, 'Cont' = number of numerical features)
 
-- `adult_complete` [UCI ID: 2](https://archive.ics.uci.edu/dataset/2/adult) [N = 47876, p = 14, Cat = 8, Cont = 6]{style="float:right"}  
+- `adult_complete` [UCI ID: 2](https://archive.ics.uci.edu/dataset/2/adult) (N = 47876, p = 14, Cat = 8, Cont = 6)  
   **Note:** In comparison with the original dataset, we renamed some variables 
   and classes, dropped the variable `education`
   because of redundancy with `education_num`, and reduced the number of classes in
   the variable `native-country` to the top 30 most frequent countries.
-- `nursery` [UCI ID: 76](https://archive.ics.uci.edu/dataset/76/nursery) [N = 12958, p = 9, Cat = 9, Cont = 0]{style="float:right"}  
+- `nursery` [UCI ID: 76](https://archive.ics.uci.edu/dataset/76/nursery) (N = 12958, p = 9, Cat = 9, Cont = 0)  
   **Note:** We removed all instances with the class `recommend` in the variable 
   `class`.
-- `car_evaluation` [UCI ID: 19](https://archive.ics.uci.edu/dataset/19/car+evaluation) [N =   1728, p =  7, Cat =  7, Cont =  0]{style="float:right"}
-- `chess_king_rook_vs_king` [UCI ID: 23](https://archive.ics.uci.edu/dataset/23/chess+king+rook+vs+king) [N = 28056, p = 7, Cat = 4, Cont = 3]{style="float:right"}
-- `connect_4` [UCI ID: 26](https://archive.ics.uci.edu/dataset/26/connect+4) [N = 67557, p = 43, Cat = 43, Cont = 0]{style="float:right"}
-- `letter_recognition` [UCI ID: 59](https://archive.ics.uci.edu/dataset/59/letter+recognition) [N = 20000, p = 17, Cat = 1, Cont = 16]{style="float:right"}
-- `magic_gamma_telescope` [UCI ID: 159](https://archive.ics.uci.edu/dataset/159/magic+gamma+telescope) [N = 19020, p = 11, Cat = 1, Cont = 10]{style="float:right"}
-- `statlog_landsat_satellite` [UCI ID: 146](https://archive.ics.uci.edu/dataset/146/statlog+landsat+satellite) [N = 6435, p = 37, Cat = 0, Cont = 37]{style="float:right"}
-- `diabetes` [Kaggle: mathchi/diabetes-data-set](https://www.kaggle.com/datasets/mathchi/diabetes-data-set) [N = 768, p = 9, Cat = 0, Cont = 9]{style="float:right"}
-- `diabetes_HI` [Kaggle: alexteboul/diabetes-health-indicators-dataset](https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset) [N = 253680, p = 22, Cat = 0, Cont = 22]{style="float:right"}
-- `diamonds` [Kaggle: shivam2503/diamonds](https://www.kaggle.com/datasets/shivam2503/diamonds)  [N = 53940, p = 10, Cat = 3, Cont = 7]{style="float:right"}
+- `car_evaluation` [UCI ID: 19](https://archive.ics.uci.edu/dataset/19/car+evaluation) (N =   1728, p =  7, Cat =  7, Cont =  0)
+- `chess_king_rook_vs_king` [UCI ID: 23](https://archive.ics.uci.edu/dataset/23/chess+king+rook+vs+king) (N = 28056, p = 7, Cat = 4, Cont = 3)
+- `connect_4` [UCI ID: 26](https://archive.ics.uci.edu/dataset/26/connect+4) (N = 67557, p = 43, Cat = 43, Cont = 0)
+- `letter_recognition` [UCI ID: 59](https://archive.ics.uci.edu/dataset/59/letter+recognition) (N = 20000, p = 17, Cat = 1, Cont = 16)
+- `magic_gamma_telescope` [UCI ID: 159](https://archive.ics.uci.edu/dataset/159/magic+gamma+telescope) (N = 19020, p = 11, Cat = 1, Cont = 10)
+- `statlog_landsat_satellite` [UCI ID: 146](https://archive.ics.uci.edu/dataset/146/statlog+landsat+satellite) (N = 6435, p = 37, Cat = 0, Cont = 37)
+- `diabetes` [Kaggle: mathchi/diabetes-data-set](https://www.kaggle.com/datasets/mathchi/diabetes-data-set) (N = 768, p = 9, Cat = 0, Cont = 9)
+- `diabetes_HI` [Kaggle: alexteboul/diabetes-health-indicators-dataset](https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset) (N = 253680, p = 22, Cat = 0, Cont = 22)
+- `diamonds` [Kaggle: shivam2503/diamonds](https://www.kaggle.com/datasets/shivam2503/diamonds)  (N = 53940, p = 10, Cat = 3, Cont = 7)
 
 
 
