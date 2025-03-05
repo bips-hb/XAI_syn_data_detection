@@ -146,7 +146,7 @@ The figures in the paper can be reproduced by running the following script:
 - `cli`
 
 
-### Required Python <img src="https://s3.dualstack.us-east-2.amazonaws.com/pythondotorg-assets/media/community/logos/python-logo-only.png" alt="Python logo" style="height: 1em; vertical-align: middle;"> packages
+### Required Python <img src="https://s3.dualstack.us-east-2.amazonaws.com/pythondotorg-assets/media/community/logos/python-logo-only.png" alt="Python logo" style="height: 1em; vertical-align: middle;"> packages for synthesizers
 
 - `json`
 - `tabsyn`
