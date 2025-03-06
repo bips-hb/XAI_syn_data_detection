@@ -114,12 +114,16 @@ ggsave("figures/FIG_1_model_performance.pdf", width = 12, height = 4)
 #                       for the generative model?
 ################################################################################
 res_pfi <- data.table(readRDS("./results/Q1/feature_importance.rds"))
-res_treeshap <- c(
-  readRDS("./results/Q3/intershap_1.rds"),
-  readRDS("./results/Q3/intershap_2.rds"),
-  readRDS("./results/Q3/intershap_3.rds"),
-  readRDS("./results/Q3/intershap_4.rds")
-)
+if(file.exists("./results/Q3/intershap.rds")){
+  res_treeshap <- readRDS("./results/Q3/intershap.rds")
+} else {
+  res_treeshap <- c(
+    readRDS("./results/Q3/intershap_1.rds"),
+    readRDS("./results/Q3/intershap_2.rds"),
+    readRDS("./results/Q3/intershap_3.rds"),
+    readRDS("./results/Q3/intershap_4.rds")
+  )
+}
 
 
 # Plot for adult_complete ------------------------------------------------------
@@ -320,12 +324,16 @@ ggsave("figures/FIG_9_APP_Q2_nursery.pdf", plot = p, width = 12, height = 4)
 ################################################################################
 res_condshap <- fread("./results/Q3/condshap.csv")
 #res_intershap <- readRDS("./results/Q3/intershap.rds")
-res_intershap <- c(
-  readRDS("./results/Q3/intershap_1.rds"),
-  readRDS("./results/Q3/intershap_2.rds"),
-  readRDS("./results/Q3/intershap_3.rds"),
-  readRDS("./results/Q3/intershap_4.rds")
-)
+if(file.exists("./results/Q3/intershap.rds")){
+  res_intershap <- readRDS("./results/Q3/intershap.rds")
+} else {
+  res_intershap <- c(
+    readRDS("./results/Q3/intershap_1.rds"),
+    readRDS("./results/Q3/intershap_2.rds"),
+    readRDS("./results/Q3/intershap_3.rds"),
+    readRDS("./results/Q3/intershap_4.rds")
+  )
+}
 
 #-------------------------------------------------------------------------------
 # TreeSHAP (marginal vs. conditional) for adult_complete (FIG. 4)
