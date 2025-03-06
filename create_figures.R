@@ -2,7 +2,7 @@
 #
 #                  Create all Figures for the manuscript
 #
-#              "What’s Wrong with Your Synthetic Tabular Data? 
+#              "What’s Wrong with Your Synthetic Tabular Data?
 #             Using Explainable AI to Evaluate Generative Models"
 #
 # ------------------------------------------------------------------------------
@@ -114,17 +114,12 @@ ggsave("figures/FIG_1_model_performance.pdf", width = 12, height = 4)
 #                       for the generative model?
 ################################################################################
 res_pfi <- data.table(readRDS("./results/Q1/feature_importance.rds"))
-res_treeshap <- c(
-  readRDS("./results/Q3/intershap_1.rds"),
-  readRDS("./results/Q3/intershap_2.rds"),
-  readRDS("./results/Q3/intershap_3.rds"),
-  readRDS("./results/Q3/intershap_4.rds")
-)
+res_treeshap <- readRDS("./results/Q3/intershap.rds")
 
 # Plot for adult_complete ------------------------------------------------------
 
 # PFI values
-df_pfi <- res_pfi[dataset_name == "adult_complete" & method == "PFI", 
+df_pfi <- res_pfi[dataset_name == "adult_complete" & method == "PFI",
                   c("feature", "value", "method")]
 
 # TreeSHAP values (marginal)
@@ -222,8 +217,8 @@ ggsave("figures/FIG_8_APP_Q1_nursery.pdf", plot = p, width = 12, height = 5)
 ################################################################################
 #                         RESEARCH QUESTION 2 (Q2)
 #
-#     How do the generative models behave in low and high density areas 
-#     of feature distributions? Which areas are under- or overrepresented 
+#     How do the generative models behave in low and high density areas
+#     of feature distributions? Which areas are under- or overrepresented
 #     in the synthetic data?
 ################################################################################
 res_q2 <- data.table(readRDS("./results/Q2/feat_effects.rds"))
@@ -250,7 +245,7 @@ df_ice <- df_ice[id %in% ids]
 p1 <- ggplot(mapping = aes(x = as.numeric(as.character(gridpoint)))) +
   geom_line(data = df_ice, aes(group = id, color = real, y = value), alpha = 0.5, linewidth = 0.3) +
   geom_line(aes(group = real, y = value), data = df_pdp, linewidth = 1.5, color = "black") +
-  geom_rug(data = df_rug_feat[sample(nrow(df_rug_feat), min(num_rugs, nrow(df_rug_feat)))], 
+  geom_rug(data = df_rug_feat[sample(nrow(df_rug_feat), min(num_rugs, nrow(df_rug_feat)))],
            aes(color = real), sides = "b", alpha = 0.5) +
   facet_grid(cols = vars(feature), labeller = function(s) paste0("Feature: ", s)) +
   labs(x = "Feature value", y = "Prediction", color = NULL) +
@@ -314,47 +309,46 @@ ggsave("figures/FIG_9_APP_Q2_nursery.pdf", plot = p, width = 12, height = 4)
 ################################################################################
 #                         RESEARCH QUESTION 3 (Q3)
 #
-#     Which features and feature dependencies/interactions contributed most 
+#     Which features and feature dependencies/interactions contributed most
 #     to the detection of an individual real or synthetic observation?
 ################################################################################
-res_condshap <- fread("./results/Q3/condshap_final.csv")
-res_intershap <- c(
-  readRDS("./results/Q3/intershap_1.rds"),
-  readRDS("./results/Q3/intershap_2.rds"),
-  readRDS("./results/Q3/intershap_3.rds"),
-  readRDS("./results/Q3/intershap_4.rds")
-)
+res_condshap <- fread("./results/Q3/condshap.csv")
 res_intershap <- readRDS("./results/Q3/intershap.rds")
 
 #-------------------------------------------------------------------------------
 # TreeSHAP (marginal vs. conditional) for adult_complete (FIG. 4)
 #-------------------------------------------------------------------------------
 
+# Adult data specification
+dataset_name0 = "adult_complete"
+model_name0 = "xgboost"
+syn_name0 = "TabSyn"
+run_model0 = 2
+
 # Preprocessing ----------------------------------------------------------------
-# Consider these types of observations:
-# large differences between ctree and indep. Check if where it differs is seen 
-# from pairplots of the data
 
 # First considering synthetic observations
-this_res_condshap <- res_condshap[dataset_name=="adult_complete" &
-                                    syn_name == "TabSyn" &
-                                    run_model==2 &
-                                    model_name == "xgboost" &
+this_res_condshap <- res_condshap[dataset_name==dataset_name0 &
+                                    syn_name == syn_name0 &
+                                    run_model==run_model0 &
+                                    model_name == model_name0 &
                                     type == "syn"]
+
 
 features_cols <- this_res_condshap[,unique(feature)]
 
-#### Simplest way to get feature values
-res_ce_values <- fread("./results/Q4/ce_values_final.csv")
-this_res_ce_values <- res_ce_values[dataset_name=="adult_complete" &
-                                      syn_name == "TabSyn" &
-                                      run_model==2 &
-                                      model_name == "xgboost" &
-                                      type == "syn"]
-this_res_ce_values[row_type=="org"]
-features_dt <- dcast(this_res_ce_values[row_type=="org",.(rowid_test,variable,value)],
-                     formula = rowid_test~variable)
-feature_vals_dt <- features_dt[,..features_cols]
+# Get original data values
+data <- load_data(dataset_name0, syn_name)
+
+data <- as.data.table(data[[paste0(dataset_name0,"--",syn_name0,"--",run_model0)]])
+
+data_test <- data[data$train == 0]
+data_test[,rowid_test := .I]
+
+features_dt <- data_test[rowid_test %in% this_res_condshap[,unique(rowid_test)],]
+
+features_dt[,(features_cols) := lapply(.SD, function(x) as.character(x)), .SDcols = features_cols]
+
 ####
 
 # Flattening ctree and indep shapley values
@@ -415,19 +409,19 @@ info_dt_intershap <- as.data.table(t(sapply(res_intershap, function(x) unlist(x$
 info_dt_intershap[,row_id:=.I]
 
 # First considering synthetic observations
-this_intershap_index <- info_dt_intershap[dataset=="adult_complete" &
-                                            syn=="TabSyn" &
-                                            run_model==2 &
-                                            detect_model=="xgboost",row_id]
+this_intershap_index <- info_dt_intershap[dataset==dataset_name0 &
+                                            syn==syn_name0 &
+                                            run_model==run_model0 &
+                                            detect_model==model_name0,row_id]
 this_res_intershap <- res_intershap[[this_intershap_index]]$results
 this_info_intershap <- res_intershap[[this_intershap_index]]$info
 
 # Getting observations to plot
 relevant_test_obs <- fread("./results/prepare_local/relevant_test_obs.csv")
-this_relevant_test_obs <- relevant_test_obs[dataset_name=="adult_complete" &
-                                              syn_name == "TabSyn" &
-                                              run_model==2 &
-                                              model_name == "xgboost" &
+this_relevant_test_obs <- relevant_test_obs[dataset_name==dataset_name0 &
+                                              syn_name == syn_name0 &
+                                              run_model==run_model0 &
+                                              model_name == model_name0 &
                                               type == "syn"]
 shapviz_row_mapper <- data.table(rowid_testobs = this_relevant_test_obs[,rowid])
 shapviz_row_mapper[,shapviz_rowno := match(rowid_testobs,this_info_intershap$rowid)]
@@ -454,24 +448,25 @@ ggsave("figures/FIG_5_Q3_adult_complete.pdf", plot = pl_inter, width = 10, heigh
 #-------------------------------------------------------------------------------
 
 # Preprocessing ----------------------------------------------------------------
-this_res_condshap <- res_condshap[dataset_name=="adult_complete" &
-                                    syn_name == "TabSyn" &
-                                    run_model==2 &
-                                    model_name == "xgboost" &
+
+this_res_condshap <- res_condshap[dataset_name==dataset_name0 &
+                                    syn_name == syn_name0 &
+                                    run_model==run_model0 &
+                                    model_name == model_name0 &
                                     type == "real"]
 
-#### Simplest way to get feature values
-res_ce_values <- fread("./results/Q4/ce_values_final.csv")
-this_res_ce_values <- res_ce_values[dataset_name=="adult_complete" &
-                                      syn_name == "TabSyn" &
-                                      run_model==2 &
-                                      model_name == "xgboost" &
-                                      type == "real"]
+# Get original data values
+data <- load_data(dataset_name0, syn_name0)
 
-this_res_ce_values[row_type=="org"]
-features_dt <- dcast(this_res_ce_values[row_type=="org",.(rowid_test,variable,value)],
-                     formula = rowid_test~variable)
-feature_vals_dt <- features_dt[,..features_cols]
+data <- as.data.table(data[[paste0(dataset_name0,"--",syn_name0,"--",run_model0)]])
+
+data_test <- data[data$train == 0]
+data_test[,rowid_test := .I]
+
+features_dt <- data_test[rowid_test %in% this_res_condshap[,unique(rowid_test)],]
+
+features_dt[,(features_cols) := lapply(.SD, function(x) as.character(x)), .SDcols = features_cols]
+
 ####
 
 # Flattening ctree and indep shapley values
@@ -502,10 +497,10 @@ p1 <- sv_force_shapviz_mod3(ctree_dt[rowid_test==this_rowid_test,..features_cols
 #-------------------------------------------------------------------------------
 
 # Preprocessing ----------------------------------------------------------------
-this_relevant_test_obs <- relevant_test_obs[dataset_name=="adult_complete" &
-                                              syn_name == "TabSyn" &
-                                              run_model==2 &
-                                              model_name == "xgboost" &
+this_relevant_test_obs <- relevant_test_obs[dataset_name==dataset_name0 &
+                                              syn_name == syn_name0 &
+                                              run_model==run_model0 &
+                                              model_name == model_name0 &
                                               type == "real"]
 
 shapviz_row_mapper <- data.table(rowid_testobs = this_relevant_test_obs[,rowid])
@@ -537,23 +532,30 @@ ggsave("figures/FIG_6_Q3_adult_complete.pdf", plot = p, width = 14, height = 8)
 # TreeSHAP (interactions) for nursery (FIG. 10 in appendix)
 #-------------------------------------------------------------------------------
 
+# nursery data specification
+dataset_name = "nursery"
+model_name = "xgboost"
+syn_name = "CTGAN"
+run_model = 2
+
+
 # Preprocessing ----------------------------------------------------------------
 
 # First considering synthetic observations
-this_intershap_index <- info_dt_intershap[dataset=="nursery" &
-                                            syn == "CTGAN" &
-                                            run_model==8 &
-                                            detect_model == "xgboost", row_id]
+this_intershap_index <- info_dt_intershap[dataset==dataset_name0 &
+                                            syn == syn_name0 &
+                                            run_model==run_model0 &
+                                            detect_model == model_name0, row_id]
 this_res_intershap <- res_intershap[[this_intershap_index]]$results
 this_info_intershap <- res_intershap[[this_intershap_index]]$info
 
 # Getting observations to plot
 relevant_test_obs <- fread("./results/prepare_local/relevant_test_obs.csv")
 
-this_relevant_test_obs <- relevant_test_obs[dataset_name=="nursery" &
-                                              syn_name == "CTGAN" &
-                                              run_model==8 &
-                                              model_name == "xgboost" &
+this_relevant_test_obs <- relevant_test_obs[dataset_name==dataset_name0 &
+                                              syn_name == syn_name0 &
+                                              run_model==run_model0 &
+                                              model_name == model_name0 &
                                               type == "syn"]
 
 shapviz_row_mapper <- data.table(rowid_testobs = this_relevant_test_obs[,rowid])
@@ -582,17 +584,31 @@ ggsave("figures/FIG_10_APP_Q3_nursery.pdf", plot = pl_inter, width = 10, height 
 ################################################################################
 #                         RESEARCH QUESTION 4 (Q4)
 #
-#     Which minimal changes to a correctly classified synthetic observation 
+#     Which minimal changes to a correctly classified synthetic observation
 #     could be performed to make it look realistic?
 ################################################################################
 
+res_ce_values <- fread("./results/Q4/ce_values.csv")
+res_ce_measures <- fread("./results/Q4/ce_measures.csv")
 
-# Adult dataset ----------------------------------------------------------------
-res_ce_values <- fread("./results/Q4/ce_values_extra2.csv")
-res_ce_measures <- fread("./results/Q4/ce_measures_extra2.csv")
 
-this_res_ce_measures <- res_ce_measures
-this_res_ce_values <- res_ce_values
+# nursery data specification
+dataset_name0 = "adult_complete"
+model_name0 = "xgboost"
+syn_name0 = "TabSyn"
+run_model0 = 2
+
+this_res_ce_measures <- res_ce_measures[dataset_name==dataset_name0 &
+                                          syn_name == syn_name0 &
+                                          run_model==run_model0 &
+                                          model_name == model_name0 &
+                                          type == "syn"]
+
+this_res_ce_values <- res_ce_values[dataset_name==dataset_name0 &
+                                      syn_name == syn_name0 &
+                                      run_model==run_model0 &
+                                      model_name == model_name0 &
+                                      type == "syn"]
 
 # Reduce to those with the largest L0 measure
 features_cols <- unique(this_res_ce_values$variable)
@@ -626,11 +642,24 @@ rsvg_pdf("figures/FIG_7_Q4_adult_complete.svg", file = "figures/FIG_7_Q4_adult_c
 
 
 # Nursery dataset --------------------------------------------------------------
-res_ce_values <- fread("./results/Q4/ce_values_extra3.csv")
-res_ce_measures <- fread("./results/Q4/ce_measures_extra3.csv")
 
-this_res_ce_measures <- res_ce_measures
-this_res_ce_values <- res_ce_values
+# nursery data specification
+dataset_name0 = "nursery"
+model_name0 = "xgboost"
+syn_name0 = "CTGAN"
+run_model0 = 2
+
+this_res_ce_measures <- res_ce_measures[dataset_name==dataset_name0 &
+                                          syn_name == syn_name0 &
+                                          run_model==run_mode0l &
+                                          model_name == model_name0 &
+                                          type == "syn"]
+
+this_res_ce_values <- res_ce_values[dataset_name==dataset_name0 &
+                                      syn_name == syn_name0 &
+                                      run_model==run_model0 &
+                                      model_name == model_name0 &
+                                      type == "syn"]
 
 # Reduce to those with the largest L0 measure
 features_cols <- unique(this_res_ce_values$variable)

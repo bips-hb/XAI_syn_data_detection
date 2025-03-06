@@ -22,26 +22,30 @@ cli_div(theme = list(span.emph = list(color = "#3c77b9")))
 set.seed(42)
 
 # Manage number of cores and RAM
+# Note: The total number of cores used will be 'mc.cores * n_threads'
 n_threads <- 100L
+mc.cores <-10L
 
 options(future.globals.maxSize = 25000 * 1024^2)
 Sys.setenv(R_RANGER_NUM_THREADS = n_threads)
 Sys.setenv(OMP_THREAD_LIMIT = n_threads)
+options(mc.cores = mc.cores)
 
 # Global arguments for the CE method
 NUM_TRAIN <- 10^4 # Number of samples for the calculation
 GENERATE_K = 5*10^5#10^4 # TODO: Increse to at least 10^5
-TO_EXPLAIN = c("real","syn") # Which type of explanatins to explain (one or both of "real", "syn")
-PATH_relevant_test_obs <- "./resuts/prepare_local/relevant_test_obs.csv"
+PATH_relevant_test_obs <- "./results/prepare_local/relevant_test_obs.csv"
+NO_CF <- 100
 
 # Define global arguments
 filter_df <- data.table(
-  dataset_name = rev(c("adult_complete", "nursery")),
-  model_name = c("xgboost"),
-  syn_name = rev(c("TabSyn", "CTGAN")),
-  run_model = rep(1:10,each=2)
+  dataset_name = c("nursery","adult_complete"),
+  model_name = "xgboost",
+  syn_name = c("CTGAN","TabSyn"),
+  run_model = c(8,2),
+  test_ids = list(c(1342),c(1353)) # Add as vectors of any length within a list.
+                                    # Replace the vectors by NULL for all in PATH_relevant_test_obs
 )
-
 
 # Load utility methods and create dirs -----------------------------------------
 
@@ -76,18 +80,24 @@ df <- df[filter_df, on = c("dataset_name", "model_name", "syn_name", "run_model"
 
 # Load relevant test observations
 
-if(file.exists(PATH_relevant_test_obs)){
-  dt_test_obs <- fread(PATH_relevant_test_obs)
-} else {
+if(!file.exists(PATH_relevant_test_obs)){
   stop("The file with relevant test observations does not exist. Please run the prepare_local script first.")
 }
 
-dt_test_obs <- fread("./prepare_local/relevant_test_obs.csv")
-dt_test_obs <- dt_test_obs[filter_df, on = c("dataset_name", "model_name", "syn_name", "run_model")]
+dt_test_obs <- fread(PATH_relevant_test_obs)
+dt_test_obs_list <- list()
+for(i in seq_len(nrow(filter_df))){
+  specific_test_obs <- filter_df$test_ids[[i]]
+  dt_test_obs_list[[i]] <- dt_test_obs[filter_df[i,], on = c("dataset_name", "model_name", "syn_name", "run_model")]
+
+  if(!is.null(specific_test_obs)){
+    dt_test_obs_list[[i]] <- dt_test_obs_list[[i]][rowid %in% specific_test_obs]
+  }
+  dt_test_obs_list[[i]][,test_ids := NULL]
+}
 
 
-
-# Running cPFI -----------------------------------------------------------------
+# Running CE -----------------------------------------------------------------
 cli_h1("Running Counterfactual Explanations (CE) with MCCE")
 
 res <- lapply(seq_len(nrow(df)), function(i) {
@@ -133,14 +143,12 @@ res <- lapply(seq_len(nrow(df)), function(i) {
   data_test[,rowid := .I]
 
   # Get specific test observation to use
-  dt_test_obs_i <- dt_test_obs[dataset_name == df$dataset_name[i] &
-                                 model_name == df$model_name[i] &
-                                 syn_name == df$syn_name[i] &
-                                 run_model == df$run_model[i]]
+  dt_test_obs_i <- dt_test_obs_list[[i]]
+
 
   res_ce_values <- res_ce_measures <- NULL
 
-  if("real" %in% TO_EXPLAIN){
+  if(any(dt_test_obs_i[,type] %in% "real")){
     cli_progress_step("Computing counterfactuals for real observations")
 
     rowid_real <- dt_test_obs_i[type=="real", rowid]
@@ -157,16 +165,18 @@ res <- lapply(seq_len(nrow(df)), function(i) {
                                      fit.seed = 123,
                                      fit.autoregressive_model = "rpart",
                                      generate.K = GENERATE_K,
-                                     generate.seed = 123)
+                                     generate.seed = 123,
+                                     process.return_best_k = NO_CF)
 
-    melted_ce_values <- melt(data.table(rowid_test = rowid_syn, expl_syn$cf[,-c(1,2)]),
-                             id.vars="rowid_test",variable.factor = FALSE,value.factor = FALSE)
-    melted_org_values <- melt(data.table(rowid_test = rowid_syn, x_explain_syn),
+    melted_ce_values <- melt(data.table(rowid_test = rowid_real, expl_real$cf[,-c(1)]),
+                             id.vars=c("rowid_test","counterfactual_rank"),variable.factor = FALSE,value.factor = FALSE)
+    melted_org_values <- melt(data.table(rowid_test = rowid_real, x_explain_real),
                               id.vars="rowid_test",variable.factor = FALSE,value.factor = FALSE)
 
     res_ce_values <- rbind(res_ce_values,
                            data.table(melted_ce_values,row_type="cf",type="real"),
-                           data.table(melted_org_values,row_type="org",type="real")
+                           data.table(melted_org_values,row_type="org",type="real"),
+                           fill=TRUE
     )
 
     res_ce_measures <- rbind(res_ce_measures,
@@ -174,7 +184,7 @@ res <- lapply(seq_len(nrow(df)), function(i) {
     )
 
   }
-  if("syn" %in% TO_EXPLAIN){
+  if(any(dt_test_obs_i[,type] %in% "syn")){
     cli_progress_step("Computing counterfactuals for synthetic observations")
 
     rowid_syn <- dt_test_obs_i[type=="syn", rowid]
@@ -191,16 +201,18 @@ res <- lapply(seq_len(nrow(df)), function(i) {
                                     fit.seed = 123,
                                     fit.autoregressive_model = "rpart",
                                     generate.K = GENERATE_K,
-                                    generate.seed = 123)
+                                    generate.seed = 123,
+                                    process.return_best_k = NO_CF)
 
-    melted_ce_values <- melt(data.table(rowid_test = rowid_syn, expl_syn$cf[,-c(1,2)]),
-                             id.vars="rowid_test",variable.factor = FALSE, value.factor = FALSE)
+    melted_ce_values <- melt(data.table(rowid_test = rowid_syn, expl_syn$cf[,-c(1)]),
+                             id.vars=c("rowid_test","counterfactual_rank"),variable.factor = FALSE, value.factor = FALSE)
     melted_org_values <- melt(data.table(rowid_test = rowid_syn, x_explain_syn),
                               id.vars="rowid_test",variable.factor = FALSE, value.factor = FALSE)
 
     res_ce_values <- rbind(res_ce_values,
                            data.table(melted_ce_values,row_type="cf",type="syn"),
-                           data.table(melted_org_values,row_type="org",type="syn")
+                           data.table(melted_org_values,row_type="org",type="syn"),
+                           fill=TRUE
     )
 
     res_ce_measures <- rbind(res_ce_measures,
