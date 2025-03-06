@@ -114,7 +114,13 @@ ggsave("figures/FIG_1_model_performance.pdf", width = 12, height = 4)
 #                       for the generative model?
 ################################################################################
 res_pfi <- data.table(readRDS("./results/Q1/feature_importance.rds"))
-res_treeshap <- readRDS("./results/Q3/intershap.rds")
+res_treeshap <- c(
+  readRDS("./results/Q3/intershap_1.rds"),
+  readRDS("./results/Q3/intershap_2.rds"),
+  readRDS("./results/Q3/intershap_3.rds"),
+  readRDS("./results/Q3/intershap_4.rds")
+)
+
 
 # Plot for adult_complete ------------------------------------------------------
 
@@ -313,7 +319,13 @@ ggsave("figures/FIG_9_APP_Q2_nursery.pdf", plot = p, width = 12, height = 4)
 #     to the detection of an individual real or synthetic observation?
 ################################################################################
 res_condshap <- fread("./results/Q3/condshap.csv")
-res_intershap <- readRDS("./results/Q3/intershap.rds")
+#res_intershap <- readRDS("./results/Q3/intershap.rds")
+res_intershap <- c(
+  readRDS("./results/Q3/intershap_1.rds"),
+  readRDS("./results/Q3/intershap_2.rds"),
+  readRDS("./results/Q3/intershap_3.rds"),
+  readRDS("./results/Q3/intershap_4.rds")
+)
 
 #-------------------------------------------------------------------------------
 # TreeSHAP (marginal vs. conditional) for adult_complete (FIG. 4)
@@ -338,7 +350,7 @@ this_res_condshap <- res_condshap[dataset_name==dataset_name0 &
 features_cols <- this_res_condshap[,unique(feature)]
 
 # Get original data values
-data <- load_data(dataset_name0, syn_name)
+data <- load_data(dataset_name0, syn_name0)
 
 data <- as.data.table(data[[paste0(dataset_name0,"--",syn_name0,"--",run_model0)]])
 
@@ -533,10 +545,10 @@ ggsave("figures/FIG_6_Q3_adult_complete.pdf", plot = p, width = 14, height = 8)
 #-------------------------------------------------------------------------------
 
 # nursery data specification
-dataset_name = "nursery"
-model_name = "xgboost"
-syn_name = "CTGAN"
-run_model = 2
+dataset_name0 = "nursery"
+model_name0 = "xgboost"
+syn_name0 = "CTGAN"
+run_model0 = 8
 
 
 # Preprocessing ----------------------------------------------------------------
@@ -647,11 +659,11 @@ rsvg_pdf("figures/FIG_7_Q4_adult_complete.svg", file = "figures/FIG_7_Q4_adult_c
 dataset_name0 = "nursery"
 model_name0 = "xgboost"
 syn_name0 = "CTGAN"
-run_model0 = 2
+run_model0 = 8
 
 this_res_ce_measures <- res_ce_measures[dataset_name==dataset_name0 &
                                           syn_name == syn_name0 &
-                                          run_model==run_mode0l &
+                                          run_model==run_model0 &
                                           model_name == model_name0 &
                                           type == "syn"]
 
