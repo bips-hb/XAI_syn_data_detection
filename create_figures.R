@@ -700,5 +700,5 @@ cols <- colnames(tab_final)
 
 # Create and save table
 cf_table <- make_cf_table(tab_final, "nursery")
-save_as_image(x = cf_table, path = "figures/FIG_11_APP_nursery.svg")
-rsvg_pdf("figures/FIG_11_APP_nursery.svg", file = "figures/FIG_11_APP_nursery.pdf")
+save_as_image(x = cf_table, path = "figures/FIG_11_APP_Q4_nursery.svg")
+rsvg_pdf("figures/FIG_11_APP_Q4_nursery.svg", file = "figures/FIG_11_APP_Q4_nursery.pdf")
