@@ -1,8 +1,8 @@
 # What’s Wrong with Your Synthetic Tabular Data?
 
 This repository contains the code and material to reproduce the results of the 
-manuscript *"What’s Wrong with Your Synthetic Tabular Data? Using Explainable AI 
-to Evaluate Generative Models"*. The paper was accepted for the XAI 2025 conference.
+manuscript [What’s Wrong with Your Synthetic Tabular Data? Using Explainable AI 
+to Evaluate Generative Models](https://arxiv.org/abs/2504.20687) by J. Kapar, N. Koenen, and M. Jullum. The paper was accepted for the XAI 2025 conference.
 
 ## 🗂️ Datasets
 
