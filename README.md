@@ -2,7 +2,7 @@
 
 This repository contains the code and material to reproduce the results of the 
 manuscript *"What’s Wrong with Your Synthetic Tabular Data? Using Explainable AI 
-to Evaluate Generative Models"*. The paper is currently under review.
+to Evaluate Generative Models"*. The paper was accepted for the XAI 2025 conference.
 
 ## 🗂️ Datasets
 
